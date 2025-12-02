@@ -1,19 +1,21 @@
 'use client';
 
+import { useLanguage } from '@/contexts/language-context';
 import { cn } from '@/lib/utils';
 import { Activity, Bell, FolderKanban, Home, Settings, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: Home },
-  { name: 'Projects', href: '/projects', icon: FolderKanban },
-  { name: 'Notifications', href: '/notifications', icon: Bell },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { key: 'nav.dashboard', href: '/', icon: Home },
+  { key: 'nav.projects', href: '/projects', icon: FolderKanban },
+  { key: 'nav.notifications', href: '/notifications', icon: Bell },
+  { key: 'nav.settings', href: '/settings', icon: Settings },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { t } = useLanguage();
 
   return (
     <aside className="fixed left-0 top-0 h-full w-64 bg-gray-900 text-white flex flex-col">
@@ -34,7 +36,7 @@ export function Sidebar() {
           const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
           return (
             <Link
-              key={item.name}
+              key={item.key}
               href={item.href}
               className={cn(
                 'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors',
@@ -44,7 +46,7 @@ export function Sidebar() {
               )}
             >
               <item.icon className="w-5 h-5" />
-              <span className="font-medium">{item.name}</span>
+              <span className="font-medium">{t(item.key)}</span>
             </Link>
           );
         })}
@@ -54,8 +56,8 @@ export function Sidebar() {
         <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-gray-800">
           <Activity className="w-5 h-5 text-green-400" />
           <div className="flex-1">
-            <p className="text-sm font-medium">System Status</p>
-            <p className="text-xs text-green-400">All systems operational</p>
+            <p className="text-sm font-medium">{t('nav.systemStatus')}</p>
+            <p className="text-xs text-green-400">{t('nav.allOperational')}</p>
           </div>
         </div>
       </div>

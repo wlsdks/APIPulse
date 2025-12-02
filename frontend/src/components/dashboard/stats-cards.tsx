@@ -1,6 +1,7 @@
 'use client';
 
 import { Card, CardContent } from '@/components/ui/card';
+import { useLanguage } from '@/contexts/language-context';
 import type { DashboardOverview } from '@/types';
 import { Activity, CheckCircle, Clock, Layers } from 'lucide-react';
 
@@ -9,30 +10,32 @@ interface StatsCardsProps {
 }
 
 export function StatsCards({ data }: StatsCardsProps) {
+  const { t } = useLanguage();
+
   const stats = [
     {
-      name: 'Total Projects',
+      name: t('dashboard.totalProjects'),
       value: data.totalProjects,
       icon: Layers,
       color: 'text-blue-500',
       bgColor: 'bg-blue-100 dark:bg-blue-900/30',
     },
     {
-      name: 'Total Endpoints',
+      name: t('dashboard.totalEndpoints'),
       value: data.totalEndpoints,
       icon: Activity,
       color: 'text-purple-500',
       bgColor: 'bg-purple-100 dark:bg-purple-900/30',
     },
     {
-      name: 'Success Rate',
+      name: t('dashboard.successRate'),
       value: `${data.overallSuccessRate.toFixed(1)}%`,
       icon: CheckCircle,
       color: data.overallSuccessRate >= 90 ? 'text-green-500' : 'text-yellow-500',
       bgColor: data.overallSuccessRate >= 90 ? 'bg-green-100 dark:bg-green-900/30' : 'bg-yellow-100 dark:bg-yellow-900/30',
     },
     {
-      name: 'Avg Response',
+      name: t('dashboard.avgResponseTime'),
       value: `${data.overallAvgResponseTimeMs}ms`,
       icon: Clock,
       color: 'text-orange-500',
@@ -42,8 +45,8 @@ export function StatsCards({ data }: StatsCardsProps) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {stats.map((stat) => (
-        <Card key={stat.name}>
+      {stats.map((stat, index) => (
+        <Card key={index}>
           <CardContent className="flex items-center gap-4">
             <div className={`p-3 rounded-xl ${stat.bgColor}`}>
               <stat.icon className={`w-6 h-6 ${stat.color}`} />

@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import type {
   Project,
   ApiEndpoint,
@@ -13,6 +13,7 @@ import type {
   CreateScheduleRequest,
   CreateNotificationRequest,
 } from '@/types';
+import { ApiException, type ApiError } from '@/types/error';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
@@ -22,6 +23,31 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// Add request interceptor to include language header
+api.interceptors.request.use((config) => {
+  const language = typeof window !== 'undefined'
+    ? localStorage.getItem('language') || 'en'
+    : 'en';
+  config.headers['Accept-Language'] = language;
+  return config;
+});
+
+// Add response interceptor to handle errors
+api.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError<ApiError>) => {
+    if (error.response?.data?.code) {
+      throw new ApiException(error.response.data);
+    }
+    // Handle network errors or other non-API errors
+    throw new ApiException({
+      code: 'E1000',
+      message: error.message || 'Network error',
+      status: error.response?.status || 500,
+    });
+  }
+);
 
 // Dashboard
 export const getDashboardOverview = async (): Promise<DashboardOverview> => {

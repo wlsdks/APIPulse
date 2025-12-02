@@ -5,6 +5,8 @@ import com.apipulse.dto.response.ProjectTestResultResponse
 import com.apipulse.dto.response.TestResultPageResponse
 import com.apipulse.dto.response.TestResultResponse
 import com.apipulse.dto.response.TestStatsResponse
+import com.apipulse.exception.NoEndpointsToTestException
+import com.apipulse.exception.ProjectNotFoundException
 import com.apipulse.model.TestStatus
 import com.apipulse.model.TriggerType
 import com.apipulse.repository.ProjectRepository
@@ -27,12 +29,16 @@ class TestServiceImpl(
     private val notificationService: NotificationService
 ) : TestService {
 
-    override fun runTests(projectId: String): ProjectTestResultResponse? {
-        val project = projectRepository.findById(projectId).orElse(null)
-            ?: return null
+    override fun runTests(projectId: String): ProjectTestResultResponse {
+        val project = projectRepository.findById(projectId)
+            .orElseThrow { ProjectNotFoundException(projectId) }
 
         val result = runBlocking {
             apiTesterService.testProject(projectId, TriggerType.MANUAL)
+        }
+
+        if (result.results.isEmpty()) {
+            throw NoEndpointsToTestException(projectId)
         }
 
         if (result.failedCount > 0) {
@@ -42,9 +48,9 @@ class TestServiceImpl(
         return result.toResponse()
     }
 
-    override fun getTestResults(projectId: String, page: Int, size: Int): TestResultPageResponse? {
+    override fun getTestResults(projectId: String, page: Int, size: Int): TestResultPageResponse {
         if (!projectRepository.existsById(projectId)) {
-            return null
+            throw ProjectNotFoundException(projectId)
         }
 
         val pageable = PageRequest.of(page, size, Sort.by("executedAt").descending())
@@ -58,18 +64,18 @@ class TestServiceImpl(
         )
     }
 
-    override fun getLatestResults(projectId: String): List<TestResultResponse>? {
+    override fun getLatestResults(projectId: String): List<TestResultResponse> {
         if (!projectRepository.existsById(projectId)) {
-            return null
+            throw ProjectNotFoundException(projectId)
         }
 
         return testResultRepository.findLatestResultsForProject(projectId)
             .map { it.toResponse() }
     }
 
-    override fun getTestStats(projectId: String): TestStatsResponse? {
+    override fun getTestStats(projectId: String): TestStatsResponse {
         if (!projectRepository.existsById(projectId)) {
-            return null
+            throw ProjectNotFoundException(projectId)
         }
 
         val since = Instant.now().minusSeconds(86400)

@@ -1,4 +1,5 @@
 export type AuthType = 'NONE' | 'BEARER_TOKEN' | 'API_KEY' | 'BASIC_AUTH';
+export * from './error';
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD' | 'OPTIONS';
 export type TestStatus = 'SUCCESS' | 'FAILED' | 'ERROR' | 'TIMEOUT';
 export type TriggerType = 'MANUAL' | 'SCHEDULED';

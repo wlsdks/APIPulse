@@ -1,8 +1,10 @@
 'use client';
 
-import { Badge, StatusBadge } from '@/components/ui/badge';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useLanguage } from '@/contexts/language-context';
+import { useToast } from '@/contexts/toast-context';
 import { deleteProject, getProjects, syncProjectApis } from '@/lib/api';
 import { formatRelativeTime } from '@/lib/utils';
 import type { Project } from '@/types';
@@ -12,6 +14,8 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 export default function ProjectsPage() {
+  const { t } = useLanguage();
+  const { showError, showSuccess } = useToast();
   const queryClient = useQueryClient();
   const [openMenu, setOpenMenu] = useState<string | null>(null);
 
@@ -24,6 +28,10 @@ export default function ProjectsPage() {
     mutationFn: syncProjectApis,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
+      showSuccess(t('success.syncCompleted'));
+    },
+    onError: (error) => {
+      showError(error);
     },
   });
 
@@ -31,6 +39,10 @@ export default function ProjectsPage() {
     mutationFn: deleteProject,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
+      showSuccess(t('success.projectDeleted'));
+    },
+    onError: (error) => {
+      showError(error);
     },
   });
 
@@ -46,13 +58,13 @@ export default function ProjectsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Projects</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Manage your API monitoring projects</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('projects.title')}</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">{t('projects.subtitle')}</p>
         </div>
         <Link href="/projects/new">
           <Button>
             <Plus className="w-4 h-4 mr-2" />
-            New Project
+            {t('projects.new')}
           </Button>
         </Link>
       </div>
@@ -63,14 +75,14 @@ export default function ProjectsPage() {
             <div className="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-6">
               <ExternalLink className="w-10 h-10 text-gray-400" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No projects yet</h3>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{t('projects.noProjects')}</h3>
             <p className="text-gray-500 dark:text-gray-400 mb-6 text-center max-w-md">
-              Create your first project to start monitoring your Spring Boot APIs. You can import endpoints from Swagger/OpenAPI.
+              {t('projects.createDescription')}
             </p>
             <Link href="/projects/new">
               <Button size="lg">
                 <Plus className="w-5 h-5 mr-2" />
-                Create Your First Project
+                {t('projects.new')}
               </Button>
             </Link>
           </CardContent>
@@ -88,12 +100,12 @@ export default function ProjectsPage() {
                     >
                       {project.name}
                     </Link>
-                    {!project.enabled && <Badge variant="warning">Disabled</Badge>}
+                    {!project.enabled && <Badge variant="warning">{t('common.disabled')}</Badge>}
                   </div>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{project.baseUrl}</p>
                   <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                    <span>{project.endpointCount} endpoints</span>
-                    <span>Updated {formatRelativeTime(project.updatedAt)}</span>
+                    <span>{project.endpointCount} {t('projects.endpoints')}</span>
+                    <span>{formatRelativeTime(project.updatedAt)}</span>
                   </div>
                 </div>
 
@@ -103,7 +115,7 @@ export default function ProjectsPage() {
                     size="sm"
                     onClick={() => syncMutation.mutate(project.id)}
                     disabled={syncMutation.isPending}
-                    title="Sync APIs from Swagger"
+                    title={t('project.syncApis')}
                   >
                     <RefreshCw className={`w-4 h-4 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
                   </Button>
@@ -123,19 +135,19 @@ export default function ProjectsPage() {
                           href={`/projects/${project.id}`}
                           className="block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
                         >
-                          View Details
+                          {t('common.edit')}
                         </Link>
                         <button
                           className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800"
                           onClick={() => {
-                            if (confirm('Are you sure you want to delete this project?')) {
+                            if (confirm(t('common.confirmDelete'))) {
                               deleteMutation.mutate(project.id);
                             }
                             setOpenMenu(null);
                           }}
                         >
                           <Trash2 className="w-4 h-4 inline mr-2" />
-                          Delete
+                          {t('common.delete')}
                         </button>
                       </div>
                     )}

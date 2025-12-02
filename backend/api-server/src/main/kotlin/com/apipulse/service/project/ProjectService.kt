@@ -7,9 +7,9 @@ import com.apipulse.service.extractor.ExtractResult
 
 interface ProjectService {
     fun getAllProjects(): List<ProjectResponse>
-    fun getProject(id: String): ProjectResponse?
+    fun getProject(id: String): ProjectResponse
     fun createProject(request: CreateProjectRequest): ProjectResponse
-    fun updateProject(id: String, request: UpdateProjectRequest): ProjectResponse?
-    fun deleteProject(id: String): Boolean
-    fun syncApis(id: String): ExtractResult?
+    fun updateProject(id: String, request: UpdateProjectRequest): ProjectResponse
+    fun deleteProject(id: String)
+    fun syncApis(id: String): ExtractResult
 }

@@ -19,9 +19,7 @@ class ApiEndpointController(
 
     @GetMapping
     fun getEndpoints(@PathVariable projectId: String): ResponseEntity<List<EndpointResponse>> {
-        return endpointService.getEndpoints(projectId)
-            ?.let { ResponseEntity.ok(it) }
-            ?: ResponseEntity.notFound().build()
+        return ResponseEntity.ok(endpointService.getEndpoints(projectId))
     }
 
     @GetMapping("/{id}")
@@ -29,9 +27,7 @@ class ApiEndpointController(
         @PathVariable projectId: String,
         @PathVariable id: String
     ): ResponseEntity<EndpointResponse> {
-        return endpointService.getEndpoint(projectId, id)
-            ?.let { ResponseEntity.ok(it) }
-            ?: ResponseEntity.notFound().build()
+        return ResponseEntity.ok(endpointService.getEndpoint(projectId, id))
     }
 
     @PostMapping
@@ -39,9 +35,7 @@ class ApiEndpointController(
         @PathVariable projectId: String,
         @Valid @RequestBody request: CreateEndpointRequest
     ): ResponseEntity<EndpointResponse> {
-        return endpointService.createEndpoint(projectId, request)
-            ?.let { ResponseEntity.status(HttpStatus.CREATED).body(it) }
-            ?: ResponseEntity.notFound().build()
+        return ResponseEntity.status(HttpStatus.CREATED).body(endpointService.createEndpoint(projectId, request))
     }
 
     @PutMapping("/{id}")
@@ -50,9 +44,7 @@ class ApiEndpointController(
         @PathVariable id: String,
         @Valid @RequestBody request: UpdateEndpointRequest
     ): ResponseEntity<EndpointResponse> {
-        return endpointService.updateEndpoint(projectId, id, request)
-            ?.let { ResponseEntity.ok(it) }
-            ?: ResponseEntity.notFound().build()
+        return ResponseEntity.ok(endpointService.updateEndpoint(projectId, id, request))
     }
 
     @DeleteMapping("/{id}")
@@ -60,11 +52,8 @@ class ApiEndpointController(
         @PathVariable projectId: String,
         @PathVariable id: String
     ): ResponseEntity<Void> {
-        return if (endpointService.deleteEndpoint(projectId, id)) {
-            ResponseEntity.noContent().build()
-        } else {
-            ResponseEntity.notFound().build()
-        }
+        endpointService.deleteEndpoint(projectId, id)
+        return ResponseEntity.noContent().build()
     }
 
     @PostMapping("/{id}/test")
@@ -72,8 +61,6 @@ class ApiEndpointController(
         @PathVariable projectId: String,
         @PathVariable id: String
     ): ResponseEntity<TestResultResponse> {
-        return endpointService.testEndpoint(projectId, id)
-            ?.let { ResponseEntity.ok(it) }
-            ?: ResponseEntity.notFound().build()
+        return ResponseEntity.ok(endpointService.testEndpoint(projectId, id))
     }
 }

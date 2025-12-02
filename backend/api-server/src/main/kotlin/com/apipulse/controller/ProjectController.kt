@@ -24,9 +24,7 @@ class ProjectController(
 
     @GetMapping("/{id}")
     fun getProject(@PathVariable id: String): ResponseEntity<ProjectResponse> {
-        return projectService.getProject(id)
-            ?.let { ResponseEntity.ok(it) }
-            ?: ResponseEntity.notFound().build()
+        return ResponseEntity.ok(projectService.getProject(id))
     }
 
     @PostMapping
@@ -40,30 +38,22 @@ class ProjectController(
         @PathVariable id: String,
         @Valid @RequestBody request: UpdateProjectRequest
     ): ResponseEntity<ProjectResponse> {
-        return projectService.updateProject(id, request)
-            ?.let { ResponseEntity.ok(it) }
-            ?: ResponseEntity.notFound().build()
+        return ResponseEntity.ok(projectService.updateProject(id, request))
     }
 
     @DeleteMapping("/{id}")
     fun deleteProject(@PathVariable id: String): ResponseEntity<Void> {
-        return if (projectService.deleteProject(id)) {
-            ResponseEntity.noContent().build()
-        } else {
-            ResponseEntity.notFound().build()
-        }
+        projectService.deleteProject(id)
+        return ResponseEntity.noContent().build()
     }
 
     @PostMapping("/{id}/sync")
     fun syncApis(@PathVariable id: String): ResponseEntity<ExtractResult> {
-        return projectService.syncApis(id)
-            ?.let { result ->
-                if (result.hasErrors) {
-                    ResponseEntity.badRequest().body(result)
-                } else {
-                    ResponseEntity.ok(result)
-                }
-            }
-            ?: ResponseEntity.notFound().build()
+        val result = projectService.syncApis(id)
+        return if (result.hasErrors) {
+            ResponseEntity.badRequest().body(result)
+        } else {
+            ResponseEntity.ok(result)
+        }
     }
 }

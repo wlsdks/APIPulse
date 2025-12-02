@@ -4,6 +4,8 @@ import com.apipulse.dto.mapper.toResponse
 import com.apipulse.dto.request.CreateProjectRequest
 import com.apipulse.dto.request.UpdateProjectRequest
 import com.apipulse.dto.response.ProjectResponse
+import com.apipulse.exception.ProjectNotFoundException
+import com.apipulse.exception.ProjectSwaggerUrlRequiredException
 import com.apipulse.model.Project
 import com.apipulse.repository.ProjectRepository
 import com.apipulse.service.extractor.ApiExtractorService
@@ -23,10 +25,10 @@ class ProjectServiceImpl(
         return projectRepository.findAll().map { it.toResponse() }
     }
 
-    override fun getProject(id: String): ProjectResponse? {
+    override fun getProject(id: String): ProjectResponse {
         return projectRepository.findById(id)
             .map { it.toResponse() }
-            .orElse(null)
+            .orElseThrow { ProjectNotFoundException(id) }
     }
 
     @Transactional
@@ -51,36 +53,40 @@ class ProjectServiceImpl(
     }
 
     @Transactional
-    override fun updateProject(id: String, request: UpdateProjectRequest): ProjectResponse? {
-        return projectRepository.findById(id).map { project ->
-            request.name?.let { project.name = it }
-            request.baseUrl?.let { project.baseUrl = it }
-            request.description?.let { project.description = it }
-            request.swaggerUrl?.let { project.swaggerUrl = it }
-            request.authType?.let { project.authType = it }
-            request.authValue?.let { project.authValue = it }
-            request.headerName?.let { project.headerName = it }
-            request.enabled?.let { project.enabled = it }
-            project.updatedAt = Instant.now()
+    override fun updateProject(id: String, request: UpdateProjectRequest): ProjectResponse {
+        val project = projectRepository.findById(id)
+            .orElseThrow { ProjectNotFoundException(id) }
 
-            projectRepository.save(project).toResponse()
-        }.orElse(null)
+        request.name?.let { project.name = it }
+        request.baseUrl?.let { project.baseUrl = it }
+        request.description?.let { project.description = it }
+        request.swaggerUrl?.let { project.swaggerUrl = it }
+        request.authType?.let { project.authType = it }
+        request.authValue?.let { project.authValue = it }
+        request.headerName?.let { project.headerName = it }
+        request.enabled?.let { project.enabled = it }
+        project.updatedAt = Instant.now()
+
+        return projectRepository.save(project).toResponse()
     }
 
     @Transactional
-    override fun deleteProject(id: String): Boolean {
-        return if (projectRepository.existsById(id)) {
-            projectRepository.deleteById(id)
-            true
-        } else {
-            false
+    override fun deleteProject(id: String) {
+        if (!projectRepository.existsById(id)) {
+            throw ProjectNotFoundException(id)
         }
+        projectRepository.deleteById(id)
     }
 
     @Transactional
-    override fun syncApis(id: String): ExtractResult? {
-        return projectRepository.findById(id).map { project ->
-            apiExtractorService.extractFromSwagger(project)
-        }.orElse(null)
+    override fun syncApis(id: String): ExtractResult {
+        val project = projectRepository.findById(id)
+            .orElseThrow { ProjectNotFoundException(id) }
+
+        if (project.swaggerUrl.isNullOrBlank()) {
+            throw ProjectSwaggerUrlRequiredException()
+        }
+
+        return apiExtractorService.extractFromSwagger(project)
     }
 }

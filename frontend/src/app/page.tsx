@@ -3,12 +3,14 @@
 import { ProjectsGrid } from '@/components/dashboard/projects-grid';
 import { StatsCards } from '@/components/dashboard/stats-cards';
 import { Button } from '@/components/ui/button';
+import { useLanguage } from '@/contexts/language-context';
 import { getDashboardOverview } from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
 import { Plus, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 
 export default function DashboardPage() {
+  const { t } = useLanguage();
   const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['dashboard'],
     queryFn: getDashboardOverview,
@@ -26,8 +28,8 @@ export default function DashboardPage() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-64">
-        <p className="text-red-500 mb-4">Failed to load dashboard data</p>
-        <Button onClick={() => refetch()}>Retry</Button>
+        <p className="text-red-500 mb-4">{t('common.error')}</p>
+        <Button onClick={() => refetch()}>{t('common.retry')}</Button>
       </div>
     );
   }
@@ -38,18 +40,18 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Monitor your API health at a glance</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('dashboard.title')}</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">{t('dashboard.subtitle')}</p>
         </div>
         <div className="flex gap-3">
           <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
             <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
-            Refresh
+            {t('common.refresh')}
           </Button>
           <Link href="/projects/new">
             <Button>
               <Plus className="w-4 h-4 mr-2" />
-              Add Project
+              {t('dashboard.addProject')}
             </Button>
           </Link>
         </div>
@@ -58,7 +60,7 @@ export default function DashboardPage() {
       <StatsCards data={data} />
 
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Projects</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">{t('dashboard.projectHealth')}</h2>
         <ProjectsGrid projects={data.projects} />
       </div>
     </div>

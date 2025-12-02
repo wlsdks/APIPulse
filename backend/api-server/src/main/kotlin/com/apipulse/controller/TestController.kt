@@ -17,9 +17,7 @@ class TestController(
 
     @PostMapping("/run")
     fun runTests(@PathVariable projectId: String): ResponseEntity<ProjectTestResultResponse> {
-        return testService.runTests(projectId)
-            ?.let { ResponseEntity.ok(it) }
-            ?: ResponseEntity.notFound().build()
+        return ResponseEntity.ok(testService.runTests(projectId))
     }
 
     @GetMapping("/results")
@@ -28,22 +26,16 @@ class TestController(
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "50") size: Int
     ): ResponseEntity<TestResultPageResponse> {
-        return testService.getTestResults(projectId, page, size)
-            ?.let { ResponseEntity.ok(it) }
-            ?: ResponseEntity.notFound().build()
+        return ResponseEntity.ok(testService.getTestResults(projectId, page, size))
     }
 
     @GetMapping("/latest")
     fun getLatestResults(@PathVariable projectId: String): ResponseEntity<List<TestResultResponse>> {
-        return testService.getLatestResults(projectId)
-            ?.let { ResponseEntity.ok(it) }
-            ?: ResponseEntity.notFound().build()
+        return ResponseEntity.ok(testService.getLatestResults(projectId))
     }
 
     @GetMapping("/stats")
     fun getTestStats(@PathVariable projectId: String): ResponseEntity<TestStatsResponse> {
-        return testService.getTestStats(projectId)
-            ?.let { ResponseEntity.ok(it) }
-            ?: ResponseEntity.notFound().build()
+        return ResponseEntity.ok(testService.getTestStats(projectId))
     }
 }
