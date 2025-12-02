@@ -1,0 +1,70 @@
+services:
+  backend:
+    build:
+      context: ./backend/api-server
+      dockerfile: Dockerfile
+    container_name: apipulse-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - APIPULSE_PROFILE=sqlite
+      - APIPULSE_DB_PATH=/data/apipulse.db
+      - SERVER_PORT=8080
+      # Notification settings (optional)
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-}
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL:-}
+      - EMAIL_NOTIFICATION_ENABLED=${EMAIL_NOTIFICATION_ENABLED:-false}
+      - MAIL_HOST=${MAIL_HOST:-smtp.gmail.com}
+      - MAIL_PORT=${MAIL_PORT:-587}
+      - MAIL_USERNAME=${MAIL_USERNAME:-}
+      - MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - EMAIL_RECIPIENTS=${EMAIL_RECIPIENTS:-}
+    volumes:
+      - apipulse-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/api/dashboard/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=http://backend:8080/api
+    container_name: apipulse-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8080/api
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Optional: PostgreSQL for production
+  # Uncomment and set APIPULSE_PROFILE=postgresql to use
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: apipulse-postgres
+  #   ports:
+  #     - "5432:5432"
+  #   environment:
+  #     - POSTGRES_USER=apipulse
+  #     - POSTGRES_PASSWORD=apipulse
+  #     - POSTGRES_DB=apipulse
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U apipulse"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   restart: unless-stopped
+
+volumes:
+  apipulse-data:
+  # postgres-data:
