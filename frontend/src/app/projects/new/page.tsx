@@ -1,5 +1,7 @@
 'use client';
 
+import { FadeInUp } from '@/components/motion';
+import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input, Select, Textarea } from '@/components/ui/input';
@@ -8,7 +10,7 @@ import { useToast } from '@/contexts/toast-context';
 import { createProject } from '@/lib/api';
 import type { AuthType, CreateProjectRequest } from '@/types';
 import { useMutation } from '@tanstack/react-query';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Key, Link as LinkIcon, Lock, Shield, Unlock } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -50,110 +52,147 @@ export default function NewProjectPage() {
     { value: 'BASIC_AUTH', label: t('project.authBasic') },
   ];
 
+  const getAuthIcon = (type: AuthType) => {
+    switch (type) {
+      case 'NONE':
+        return Unlock;
+      case 'BEARER_TOKEN':
+        return Shield;
+      case 'API_KEY':
+        return Key;
+      case 'BASIC_AUTH':
+        return Lock;
+    }
+  };
+
+  const AuthIcon = getAuthIcon(formData.authType);
+
   return (
-    <div className="max-w-2xl mx-auto">
+    <FadeInUp className="max-w-2xl mx-auto">
       <div className="mb-6">
-        <Link href="/projects" className="inline-flex items-center text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+        <Link
+          href="/projects"
+          className="inline-flex items-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
+        >
           <ArrowLeft className="w-4 h-4 mr-2" />
           {t('project.backToProjects')}
         </Link>
       </div>
 
-      <Card>
+      <Card variant="elevated">
         <CardHeader>
-          <CardTitle>{t('project.createNew')}</CardTitle>
+          <CardTitle className="text-xl">{t('project.createNew')}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <Input
-              label={t('project.projectName')}
-              placeholder={t('project.projectNamePlaceholder')}
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-            />
+            {/* Basic Info */}
+            <div className="space-y-4">
+              <Input
+                label={t('project.projectName')}
+                placeholder={t('project.projectNamePlaceholder')}
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+              />
 
-            <Input
-              label={t('project.baseUrl')}
-              placeholder={t('project.baseUrlPlaceholder')}
-              value={formData.baseUrl}
-              onChange={(e) => setFormData({ ...formData, baseUrl: e.target.value })}
-              required
-            />
+              <Input
+                label={t('project.baseUrl')}
+                placeholder={t('project.baseUrlPlaceholder')}
+                value={formData.baseUrl}
+                onChange={(e) => setFormData({ ...formData, baseUrl: e.target.value })}
+                required
+              />
 
-            <Textarea
-              label={t('project.description')}
-              placeholder={t('project.descriptionPlaceholder')}
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={3}
-            />
+              <Textarea
+                label={t('project.description')}
+                placeholder={t('project.descriptionPlaceholder')}
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                rows={3}
+              />
+            </div>
 
-            <Input
-              label={t('project.swaggerUrl')}
-              placeholder={t('project.swaggerUrlPlaceholder')}
-              value={formData.swaggerUrl}
-              onChange={(e) => setFormData({ ...formData, swaggerUrl: e.target.value })}
-            />
-            <p className="text-sm text-gray-500 dark:text-gray-400 -mt-4">
-              {t('project.swaggerHint')}
-            </p>
+            {/* Swagger/OpenAPI */}
+            <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-2 mb-3">
+                <LinkIcon className="w-4 h-4 text-blue-500" />
+                <span className="font-medium text-gray-900 dark:text-white">OpenAPI</span>
+              </div>
+              <Input
+                label={t('project.swaggerUrl')}
+                placeholder={t('project.swaggerUrlPlaceholder')}
+                value={formData.swaggerUrl}
+                onChange={(e) => setFormData({ ...formData, swaggerUrl: e.target.value })}
+              />
+              <p className="text-sm text-gray-500 mt-2">{t('project.swaggerHint')}</p>
+            </div>
 
-            <div className="border-t border-gray-200 dark:border-gray-800 pt-6">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">{t('project.authentication')}</h3>
+            {/* Authentication */}
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+              <div className="flex items-center gap-2 mb-4">
+                <AuthIcon className="w-5 h-5 text-blue-500" />
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                  {t('project.authentication')}
+                </h3>
+              </div>
 
               <Select
                 label={t('project.authType')}
                 options={authTypeOptions}
                 value={formData.authType}
-                onChange={(e) => setFormData({ ...formData, authType: e.target.value as AuthType })}
+                onChange={(e) =>
+                  setFormData({ ...formData, authType: e.target.value as AuthType })
+                }
               />
 
               {formData.authType !== 'NONE' && (
-                <>
+                <div className="mt-4 space-y-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 animate-fade-in">
                   {formData.authType === 'API_KEY' && (
-                    <div className="mt-4">
-                      <Input
-                        label={t('project.headerName')}
-                        placeholder="X-API-Key"
-                        value={formData.headerName}
-                        onChange={(e) => setFormData({ ...formData, headerName: e.target.value })}
-                      />
-                    </div>
+                    <Input
+                      label={t('project.headerName')}
+                      placeholder="X-API-Key"
+                      value={formData.headerName}
+                      onChange={(e) => setFormData({ ...formData, headerName: e.target.value })}
+                    />
                   )}
 
-                  <div className="mt-4">
-                    <Input
-                      label={formData.authType === 'BEARER_TOKEN' ? t('project.token') : formData.authType === 'API_KEY' ? t('project.authApiKey') : t('project.credentials')}
-                      placeholder={formData.authType === 'BEARER_TOKEN' ? 'eyJhbGciOiJIUzI1NiIs...' : ''}
-                      type="password"
-                      value={formData.authValue}
-                      onChange={(e) => setFormData({ ...formData, authValue: e.target.value })}
-                    />
-                  </div>
-                </>
+                  <Input
+                    label={
+                      formData.authType === 'BEARER_TOKEN'
+                        ? t('project.token')
+                        : formData.authType === 'API_KEY'
+                          ? t('project.authApiKey')
+                          : t('project.credentials')
+                    }
+                    placeholder={
+                      formData.authType === 'BEARER_TOKEN' ? 'eyJhbGciOiJIUzI1NiIs...' : ''
+                    }
+                    type="password"
+                    value={formData.authValue}
+                    onChange={(e) => setFormData({ ...formData, authValue: e.target.value })}
+                  />
+                </div>
               )}
             </div>
 
-            <div className="flex justify-end gap-3 pt-4">
+            {/* Actions */}
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
               <Link href="/projects">
                 <Button type="button" variant="outline">
                   {t('common.cancel')}
                 </Button>
               </Link>
-              <Button type="submit" loading={createMutation.isPending}>
+              <Button type="submit" variant="gradient" loading={createMutation.isPending}>
                 {t('project.createProject')}
               </Button>
             </div>
 
             {createMutation.isError && (
-              <p className="text-red-500 text-sm">
-                {t('project.createFailed')}
-              </p>
+              <p className="text-red-500 text-sm animate-fade-in">{t('project.createFailed')}</p>
             )}
           </form>
         </CardContent>
       </Card>
-    </div>
+    </FadeInUp>
   );
 }

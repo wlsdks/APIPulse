@@ -2,7 +2,10 @@
 
 import { ProjectsGrid } from '@/components/dashboard/projects-grid';
 import { StatsCards } from '@/components/dashboard/stats-cards';
+import { FadeInUp, StaggerContainer, StaggerItem } from '@/components/motion';
+import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
+import { SkeletonDashboard } from '@/components/ui/skeleton';
 import { useLanguage } from '@/contexts/language-context';
 import { getDashboardOverview } from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
@@ -19,17 +22,23 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
+      <div className="space-y-8">
+        <PageHeader title={t('dashboard.title')} subtitle={t('dashboard.subtitle')} />
+        <SkeletonDashboard />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <p className="text-red-500 mb-4">{t('common.error')}</p>
-        <Button onClick={() => refetch()}>{t('common.retry')}</Button>
+      <div className="space-y-8">
+        <PageHeader title={t('dashboard.title')} subtitle={t('dashboard.subtitle')} />
+        <FadeInUp>
+          <div className="flex flex-col items-center justify-center h-64 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+            <p className="text-red-500 mb-4">{t('common.error')}</p>
+            <Button onClick={() => refetch()}>{t('common.retry')}</Button>
+          </div>
+        </FadeInUp>
       </div>
     );
   }
@@ -37,32 +46,34 @@ export default function DashboardPage() {
   if (!data) return null;
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('dashboard.title')}</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">{t('dashboard.subtitle')}</p>
-        </div>
-        <div className="flex gap-3">
+    <StaggerContainer className="space-y-8">
+      <StaggerItem>
+        <PageHeader title={t('dashboard.title')} subtitle={t('dashboard.subtitle')}>
           <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
             <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
             {t('common.refresh')}
           </Button>
           <Link href="/projects/new">
-            <Button>
+            <Button variant="gradient">
               <Plus className="w-4 h-4 mr-2" />
               {t('dashboard.addProject')}
             </Button>
           </Link>
+        </PageHeader>
+      </StaggerItem>
+
+      <StaggerItem>
+        <StatsCards data={data} />
+      </StaggerItem>
+
+      <StaggerItem>
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            {t('dashboard.projectHealth')}
+          </h2>
+          <ProjectsGrid projects={data.projects} />
         </div>
-      </div>
-
-      <StatsCards data={data} />
-
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">{t('dashboard.projectHealth')}</h2>
-        <ProjectsGrid projects={data.projects} />
-      </div>
-    </div>
+      </StaggerItem>
+    </StaggerContainer>
   );
 }
