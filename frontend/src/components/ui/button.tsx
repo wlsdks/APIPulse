@@ -4,33 +4,71 @@ import { cn } from '@/lib/utils';
 import { forwardRef, type ButtonHTMLAttributes } from 'react';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'default' | 'outline' | 'ghost' | 'destructive';
-  size?: 'sm' | 'md' | 'lg';
+  variant?: 'default' | 'outline' | 'ghost' | 'destructive' | 'gradient' | 'success';
+  size?: 'sm' | 'md' | 'lg' | 'icon';
   loading?: boolean;
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'default', size = 'md', loading, disabled, children, ...props }, ref) => {
+    const baseStyles = [
+      'inline-flex items-center justify-center gap-2',
+      'font-medium rounded-lg',
+      'transition-all duration-200 ease-out',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+      'disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none',
+      'active:scale-[0.98]',
+    ].join(' ');
+
     const variants = {
-      default: 'bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600',
-      outline: 'border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800',
-      ghost: 'hover:bg-gray-100 dark:hover:bg-gray-800',
-      destructive: 'bg-red-600 text-white hover:bg-red-700',
+      default: [
+        'bg-blue-600 text-white',
+        'hover:bg-blue-700 hover:shadow-md',
+        'focus-visible:ring-blue-500',
+        'dark:bg-blue-500 dark:hover:bg-blue-600',
+      ].join(' '),
+      outline: [
+        'border-2 border-gray-300 dark:border-gray-600 bg-transparent',
+        'text-gray-900 dark:text-white',
+        'hover:bg-gray-100 dark:hover:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-500',
+        'focus-visible:ring-blue-500',
+      ].join(' '),
+      ghost: [
+        'bg-transparent text-gray-900 dark:text-white',
+        'hover:bg-gray-100 dark:hover:bg-gray-800',
+        'focus-visible:ring-blue-500',
+      ].join(' '),
+      destructive: [
+        'bg-red-600 text-white',
+        'hover:bg-red-700 hover:shadow-md',
+        'focus-visible:ring-red-500',
+      ].join(' '),
+      gradient: [
+        'bg-gradient-to-r from-blue-600 to-blue-500 text-white',
+        'hover:from-blue-700 hover:to-blue-600',
+        'hover:shadow-lg hover:shadow-blue-500/30',
+        'hover:-translate-y-0.5',
+        'focus-visible:ring-blue-500',
+      ].join(' '),
+      success: [
+        'bg-green-600 text-white',
+        'hover:bg-green-700 hover:shadow-md',
+        'focus-visible:ring-green-500',
+      ].join(' '),
     };
 
     const sizes = {
-      sm: 'px-3 py-1.5 text-sm',
-      md: 'px-4 py-2',
-      lg: 'px-6 py-3 text-lg',
+      sm: 'h-8 px-3 text-sm',
+      md: 'h-10 px-4 text-sm',
+      lg: 'h-12 px-6 text-base',
+      icon: 'h-10 w-10 p-0',
     };
 
     return (
       <button
         ref={ref}
         className={cn(
-          'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors',
-          'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
-          'disabled:opacity-50 disabled:cursor-not-allowed',
+          baseStyles,
           variants[variant],
           sizes[size],
           className
@@ -39,8 +77,19 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {loading && (
-          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+          <svg
+            className="animate-spin h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
             <path
               className="opacity-75"
               fill="currentColor"
