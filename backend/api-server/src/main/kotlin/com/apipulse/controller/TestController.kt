@@ -1,13 +1,16 @@
 package com.apipulse.controller
 
-import com.apipulse.model.TestResult
+import com.apipulse.dto.mapper.toResponse
+import com.apipulse.dto.response.ProjectTestResultResponse
+import com.apipulse.dto.response.TestResultPageResponse
+import com.apipulse.dto.response.TestResultResponse
+import com.apipulse.dto.response.TestStatsResponse
 import com.apipulse.model.TestStatus
 import com.apipulse.model.TriggerType
 import com.apipulse.repository.ProjectRepository
 import com.apipulse.repository.TestResultRepository
 import com.apipulse.service.notifier.NotificationService
 import com.apipulse.service.tester.ApiTesterService
-import com.apipulse.service.tester.ProjectTestResult
 import kotlinx.coroutines.runBlocking
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -34,7 +37,6 @@ class TestController(
             apiTesterService.testProject(projectId, TriggerType.MANUAL)
         }
 
-        // Send notifications if there are failures
         if (result.failedCount > 0) {
             notificationService.notifyTestResults(project.name, result)
         }
@@ -81,7 +83,7 @@ class TestController(
             return ResponseEntity.notFound().build()
         }
 
-        val since = Instant.now().minusSeconds(86400) // Last 24 hours
+        val since = Instant.now().minusSeconds(86400)
         val successCount = testResultRepository.countByEndpointProjectIdAndStatus(projectId, TestStatus.SUCCESS)
         val failedCount = testResultRepository.countByEndpointProjectIdAndStatus(projectId, TestStatus.FAILED)
         val errorCount = testResultRepository.countByEndpointProjectIdAndStatus(projectId, TestStatus.ERROR)
@@ -104,64 +106,3 @@ class TestController(
         )
     }
 }
-
-data class ProjectTestResultResponse(
-    val projectId: String,
-    val results: List<TestResultResponse>,
-    val successCount: Int,
-    val failedCount: Int,
-    val averageResponseTimeMs: Long,
-    val successRate: Double
-)
-
-fun ProjectTestResult.toResponse() = ProjectTestResultResponse(
-    projectId = projectId,
-    results = results.map { it.toResponse() },
-    successCount = successCount,
-    failedCount = failedCount,
-    averageResponseTimeMs = averageResponseTimeMs,
-    successRate = successRate
-)
-
-data class TestResultResponse(
-    val id: String,
-    val endpointId: String,
-    val endpointPath: String,
-    val endpointMethod: String,
-    val status: TestStatus,
-    val statusCode: Int,
-    val responseTimeMs: Long,
-    val errorMessage: String?,
-    val triggerType: TriggerType,
-    val executedAt: Instant
-)
-
-fun TestResult.toResponse() = TestResultResponse(
-    id = id!!,
-    endpointId = endpoint.id!!,
-    endpointPath = endpoint.path,
-    endpointMethod = endpoint.method.name,
-    status = status,
-    statusCode = statusCode,
-    responseTimeMs = responseTimeMs,
-    errorMessage = errorMessage,
-    triggerType = triggerType,
-    executedAt = executedAt
-)
-
-data class TestResultPageResponse(
-    val results: List<TestResultResponse>,
-    val totalElements: Long,
-    val totalPages: Int,
-    val currentPage: Int
-)
-
-data class TestStatsResponse(
-    val totalTests: Long,
-    val successCount: Long,
-    val failedCount: Long,
-    val errorCount: Long,
-    val timeoutCount: Long,
-    val successRate: Double,
-    val averageResponseTimeMs: Long
-)

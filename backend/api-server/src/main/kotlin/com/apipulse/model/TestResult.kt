@@ -45,15 +45,3 @@ data class TestResult(
     @Column(nullable = false)
     var executedAt: Instant = Instant.now()
 )
-
-enum class TestStatus {
-    SUCCESS,
-    FAILED,
-    ERROR,
-    TIMEOUT
-}
-
-enum class TriggerType {
-    MANUAL,
-    SCHEDULED
-}

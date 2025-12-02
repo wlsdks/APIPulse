@@ -1,15 +1,17 @@
 package com.apipulse.controller
 
+import com.apipulse.dto.mapper.toResponse
+import com.apipulse.dto.request.CreateEndpointRequest
+import com.apipulse.dto.request.UpdateEndpointRequest
+import com.apipulse.dto.response.EndpointResponse
+import com.apipulse.dto.response.TestResultResponse
 import com.apipulse.model.ApiEndpoint
-import com.apipulse.model.HttpMethod
 import com.apipulse.model.TriggerType
 import com.apipulse.repository.ApiEndpointRepository
 import com.apipulse.repository.ProjectRepository
 import com.apipulse.service.tester.ApiTesterService
 import jakarta.validation.Valid
-import jakarta.validation.constraints.NotBlank
 import kotlinx.coroutines.runBlocking
-import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -126,56 +128,3 @@ class ApiEndpointController(
         return ResponseEntity.ok(result.toResponse())
     }
 }
-
-data class CreateEndpointRequest(
-    @field:NotBlank(message = "Path is required")
-    val path: String,
-
-    val method: HttpMethod = HttpMethod.GET,
-    val summary: String? = null,
-    val description: String? = null,
-    val sampleRequestBody: String? = null,
-    val queryParams: String? = null,
-    val pathParams: String? = null,
-    val headers: String? = null,
-    val expectedStatusCode: Int? = null
-)
-
-data class UpdateEndpointRequest(
-    val path: String? = null,
-    val method: HttpMethod? = null,
-    val summary: String? = null,
-    val description: String? = null,
-    val sampleRequestBody: String? = null,
-    val queryParams: String? = null,
-    val pathParams: String? = null,
-    val headers: String? = null,
-    val expectedStatusCode: Int? = null,
-    val enabled: Boolean? = null
-)
-
-data class EndpointResponse(
-    val id: String,
-    val path: String,
-    val method: HttpMethod,
-    val summary: String?,
-    val description: String?,
-    val sampleRequestBody: String?,
-    val expectedStatusCode: Int,
-    val enabled: Boolean,
-    val createdAt: Instant,
-    val updatedAt: Instant
-)
-
-fun ApiEndpoint.toResponse() = EndpointResponse(
-    id = id!!,
-    path = path,
-    method = method,
-    summary = summary,
-    description = description,
-    sampleRequestBody = sampleRequestBody,
-    expectedStatusCode = expectedStatusCode,
-    enabled = enabled,
-    createdAt = createdAt,
-    updatedAt = updatedAt
-)

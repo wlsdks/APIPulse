@@ -1,10 +1,12 @@
 package com.apipulse.controller
 
+import com.apipulse.dto.mapper.toResponse
+import com.apipulse.dto.request.CreateNotificationRequest
+import com.apipulse.dto.request.UpdateNotificationRequest
+import com.apipulse.dto.response.NotificationConfigResponse
 import com.apipulse.model.NotificationConfig
-import com.apipulse.model.NotificationType
 import com.apipulse.repository.NotificationConfigRepository
 import jakarta.validation.Valid
-import jakarta.validation.constraints.NotBlank
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -80,54 +82,6 @@ class NotificationController(
         val config = notificationConfigRepository.findById(id).orElse(null)
             ?: return ResponseEntity.notFound().build()
 
-        // TODO: Implement test notification sending
         return ResponseEntity.ok(mapOf("message" to "Test notification sent to ${config.type.name}"))
     }
 }
-
-data class CreateNotificationRequest(
-    @field:NotBlank(message = "Name is required")
-    val name: String,
-
-    val type: NotificationType,
-    val webhookUrl: String? = null,
-    val emailRecipients: String? = null,
-    val notifyOnFailure: Boolean? = null,
-    val notifyOnRecovery: Boolean? = null
-)
-
-data class UpdateNotificationRequest(
-    val name: String? = null,
-    val type: NotificationType? = null,
-    val webhookUrl: String? = null,
-    val emailRecipients: String? = null,
-    val enabled: Boolean? = null,
-    val notifyOnFailure: Boolean? = null,
-    val notifyOnRecovery: Boolean? = null
-)
-
-data class NotificationConfigResponse(
-    val id: String,
-    val name: String,
-    val type: NotificationType,
-    val webhookUrl: String?,
-    val emailRecipients: String?,
-    val enabled: Boolean,
-    val notifyOnFailure: Boolean,
-    val notifyOnRecovery: Boolean,
-    val createdAt: Instant,
-    val updatedAt: Instant
-)
-
-fun NotificationConfig.toResponse() = NotificationConfigResponse(
-    id = id!!,
-    name = name,
-    type = type,
-    webhookUrl = webhookUrl?.let { "****${it.takeLast(10)}" }, // Mask URL for security
-    emailRecipients = emailRecipients,
-    enabled = enabled,
-    notifyOnFailure = notifyOnFailure,
-    notifyOnRecovery = notifyOnRecovery,
-    createdAt = createdAt,
-    updatedAt = updatedAt
-)

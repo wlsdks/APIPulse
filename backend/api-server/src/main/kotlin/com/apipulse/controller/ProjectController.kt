@@ -1,12 +1,14 @@
 package com.apipulse.controller
 
-import com.apipulse.model.AuthType
+import com.apipulse.dto.mapper.toResponse
+import com.apipulse.dto.request.CreateProjectRequest
+import com.apipulse.dto.request.UpdateProjectRequest
+import com.apipulse.dto.response.ProjectResponse
 import com.apipulse.model.Project
 import com.apipulse.repository.ProjectRepository
 import com.apipulse.service.extractor.ApiExtractorService
 import com.apipulse.service.extractor.ExtractResult
 import jakarta.validation.Valid
-import jakarta.validation.constraints.NotBlank
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -46,7 +48,6 @@ class ProjectController(
 
         val saved = projectRepository.save(project)
 
-        // Auto-extract APIs if swagger URL is provided
         if (!request.swaggerUrl.isNullOrBlank()) {
             apiExtractorService.extractFromSwagger(saved)
         }
@@ -96,54 +97,3 @@ class ProjectController(
         }.orElse(ResponseEntity.notFound().build())
     }
 }
-
-data class CreateProjectRequest(
-    @field:NotBlank(message = "Project name is required")
-    val name: String,
-
-    @field:NotBlank(message = "Base URL is required")
-    val baseUrl: String,
-
-    val description: String? = null,
-    val swaggerUrl: String? = null,
-    val authType: AuthType = AuthType.NONE,
-    val authValue: String? = null,
-    val headerName: String? = null
-)
-
-data class UpdateProjectRequest(
-    val name: String? = null,
-    val baseUrl: String? = null,
-    val description: String? = null,
-    val swaggerUrl: String? = null,
-    val authType: AuthType? = null,
-    val authValue: String? = null,
-    val headerName: String? = null,
-    val enabled: Boolean? = null
-)
-
-data class ProjectResponse(
-    val id: String,
-    val name: String,
-    val baseUrl: String,
-    val description: String?,
-    val swaggerUrl: String?,
-    val authType: AuthType,
-    val enabled: Boolean,
-    val endpointCount: Int,
-    val createdAt: Instant,
-    val updatedAt: Instant
-)
-
-fun Project.toResponse() = ProjectResponse(
-    id = id!!,
-    name = name,
-    baseUrl = baseUrl,
-    description = description,
-    swaggerUrl = swaggerUrl,
-    authType = authType,
-    enabled = enabled,
-    endpointCount = endpoints.size,
-    createdAt = createdAt,
-    updatedAt = updatedAt
-)

@@ -46,10 +46,3 @@ data class Project(
     @OneToMany(mappedBy = "project", cascade = [CascadeType.ALL], orphanRemoval = true)
     var schedules: MutableList<TestSchedule> = mutableListOf()
 )
-
-enum class AuthType {
-    NONE,
-    BEARER_TOKEN,
-    API_KEY,
-    BASIC_AUTH
-}

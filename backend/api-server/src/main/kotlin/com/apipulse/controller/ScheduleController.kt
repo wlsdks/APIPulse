@@ -1,12 +1,14 @@
 package com.apipulse.controller
 
+import com.apipulse.dto.mapper.toResponse
+import com.apipulse.dto.request.CreateScheduleRequest
+import com.apipulse.dto.request.UpdateScheduleRequest
+import com.apipulse.dto.response.ScheduleResponse
 import com.apipulse.model.TestSchedule
-import com.apipulse.model.TestStatus
 import com.apipulse.repository.ProjectRepository
 import com.apipulse.repository.TestScheduleRepository
 import com.apipulse.service.scheduler.SchedulerService
 import jakarta.validation.Valid
-import jakarta.validation.constraints.NotBlank
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -126,50 +128,3 @@ class ScheduleController(
             .orElse(ResponseEntity.notFound().build())
     }
 }
-
-data class CreateScheduleRequest(
-    @field:NotBlank(message = "Schedule name is required")
-    val name: String,
-
-    @field:NotBlank(message = "Cron expression is required")
-    val cronExpression: String,
-
-    val notifyOnFailure: Boolean? = null,
-    val notifyOnSuccess: Boolean? = null
-)
-
-data class UpdateScheduleRequest(
-    val name: String? = null,
-    val cronExpression: String? = null,
-    val enabled: Boolean? = null,
-    val notifyOnFailure: Boolean? = null,
-    val notifyOnSuccess: Boolean? = null
-)
-
-data class ScheduleResponse(
-    val id: String,
-    val name: String,
-    val cronExpression: String,
-    val enabled: Boolean,
-    val lastRunAt: Instant?,
-    val nextRunAt: Instant?,
-    val lastRunStatus: TestStatus?,
-    val notifyOnFailure: Boolean,
-    val notifyOnSuccess: Boolean,
-    val createdAt: Instant,
-    val updatedAt: Instant
-)
-
-fun TestSchedule.toResponse() = ScheduleResponse(
-    id = id!!,
-    name = name,
-    cronExpression = cronExpression,
-    enabled = enabled,
-    lastRunAt = lastRunAt,
-    nextRunAt = nextRunAt,
-    lastRunStatus = lastRunStatus,
-    notifyOnFailure = notifyOnFailure,
-    notifyOnSuccess = notifyOnSuccess,
-    createdAt = createdAt,
-    updatedAt = updatedAt
-)

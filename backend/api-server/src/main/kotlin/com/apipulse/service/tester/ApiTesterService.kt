@@ -5,6 +5,7 @@ import com.apipulse.repository.ApiEndpointRepository
 import com.apipulse.repository.ProjectRepository
 import com.apipulse.repository.TestResultRepository
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import kotlinx.coroutines.*
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
@@ -12,7 +13,6 @@ import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
-import java.time.Duration
 import java.time.Instant
 
 @Service
@@ -46,18 +46,15 @@ class ApiTesterService(
                 .uri(fullUrl)
                 .contentType(MediaType.APPLICATION_JSON)
 
-            // Add authentication headers
             applyAuthentication(requestBuilder, project)
 
-            // Add custom headers
             endpoint.headers?.let { headersJson ->
-                val headers = objectMapper.readValue(headersJson, Map::class.java) as Map<String, String>
+                val headers: Map<String, String> = objectMapper.readValue(headersJson)
                 headers.forEach { (key, value) ->
                     requestBuilder.header(key, value)
                 }
             }
 
-            // Add request body
             endpoint.sampleRequestBody?.let { body ->
                 requestBuilder.bodyValue(body)
             }
@@ -162,7 +159,7 @@ class ApiTesterService(
                     requestBuilder.header(HttpHeaders.AUTHORIZATION, "Basic $it")
                 }
             }
-            AuthType.NONE -> { /* No authentication */ }
+            AuthType.NONE -> { }
         }
     }
 
@@ -174,18 +171,16 @@ class ApiTesterService(
     ): String {
         var url = "${baseUrl.trimEnd('/')}/${path.trimStart('/')}"
 
-        // Replace path parameters with sample values
         pathParams?.let { paramsJson ->
-            val params = objectMapper.readValue(paramsJson, List::class.java) as List<Map<String, Any>>
+            val params: List<Map<String, Any>> = objectMapper.readValue(paramsJson)
             params.forEach { param ->
                 val name = param["name"] as String
-                url = url.replace("{$name}", "1") // Default placeholder value
+                url = url.replace("{$name}", "1")
             }
         }
 
-        // Add query parameters
         queryParams?.let { paramsJson ->
-            val params = objectMapper.readValue(paramsJson, List::class.java) as List<Map<String, Any>>
+            val params: List<Map<String, Any>> = objectMapper.readValue(paramsJson)
             val queryString = params.mapNotNull { param ->
                 val name = param["name"] as String
                 val required = param["required"] as? Boolean ?: false
@@ -254,21 +249,4 @@ class ApiTesterService(
             )
         )
     }
-}
-
-data class ResponseData(
-    val statusCode: Int,
-    val body: String,
-    val headers: HttpHeaders
-)
-
-data class ProjectTestResult(
-    val projectId: String,
-    val results: List<TestResult>,
-    val successCount: Int,
-    val failedCount: Int,
-    val averageResponseTimeMs: Long
-) {
-    val totalCount: Int get() = results.size
-    val successRate: Double get() = if (totalCount > 0) successCount.toDouble() / totalCount * 100 else 0.0
 }

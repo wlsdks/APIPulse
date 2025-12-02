@@ -57,7 +57,3 @@ data class ApiEndpoint(
     @OneToMany(mappedBy = "endpoint", cascade = [CascadeType.ALL], orphanRemoval = true)
     var testResults: MutableList<TestResult> = mutableListOf()
 )
-
-enum class HttpMethod {
-    GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS
-}

@@ -1,5 +1,9 @@
 package com.apipulse.controller
 
+import com.apipulse.dto.response.DashboardOverview
+import com.apipulse.dto.response.HealthCheck
+import com.apipulse.dto.response.HealthStatus
+import com.apipulse.dto.response.ProjectSummary
 import com.apipulse.model.TestStatus
 import com.apipulse.repository.ApiEndpointRepository
 import com.apipulse.repository.ProjectRepository
@@ -25,7 +29,7 @@ class DashboardController(
         val totalEndpoints = apiEndpointRepository.count()
         val activeSchedules = testScheduleRepository.findByEnabledTrue().size
 
-        val since = Instant.now().minusSeconds(86400) // Last 24 hours
+        val since = Instant.now().minusSeconds(86400)
 
         var totalSuccess = 0L
         var totalFailed = 0L
@@ -86,37 +90,3 @@ class DashboardController(
         )
     }
 }
-
-data class DashboardOverview(
-    val totalProjects: Int,
-    val totalEndpoints: Int,
-    val activeSchedules: Int,
-    val overallSuccessRate: Double,
-    val overallAvgResponseTimeMs: Long,
-    val projects: List<ProjectSummary>
-)
-
-data class ProjectSummary(
-    val id: String,
-    val name: String,
-    val baseUrl: String,
-    val endpointCount: Int,
-    val healthStatus: HealthStatus,
-    val successCount: Long,
-    val failedCount: Long,
-    val avgResponseTimeMs: Long,
-    val enabled: Boolean
-)
-
-enum class HealthStatus {
-    HEALTHY,
-    DEGRADED,
-    UNHEALTHY,
-    UNKNOWN
-}
-
-data class HealthCheck(
-    val status: String,
-    val timestamp: Instant,
-    val version: String
-)

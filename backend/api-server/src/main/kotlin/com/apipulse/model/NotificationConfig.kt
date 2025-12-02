@@ -38,9 +38,3 @@ data class NotificationConfig(
     @Column(nullable = false)
     var updatedAt: Instant = Instant.now()
 )
-
-enum class NotificationType {
-    SLACK,
-    DISCORD,
-    EMAIL
-}

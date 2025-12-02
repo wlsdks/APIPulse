@@ -60,12 +60,10 @@ class ApiExtractorService(
                         description = operation.description
                         updatedAt = Instant.now()
 
-                        // Extract request body schema
                         operation.requestBody?.content?.get("application/json")?.schema?.let { schema ->
                             requestBodySchema = objectMapper.writeValueAsString(schema)
                         }
 
-                        // Extract query parameters
                         operation.parameters?.filter { it.`in` == "query" }?.let { params ->
                             if (params.isNotEmpty()) {
                                 queryParams = objectMapper.writeValueAsString(params.map {
@@ -74,7 +72,6 @@ class ApiExtractorService(
                             }
                         }
 
-                        // Extract path parameters
                         operation.parameters?.filter { it.`in` == "path" }?.let { params ->
                             if (params.isNotEmpty()) {
                                 pathParams = objectMapper.writeValueAsString(params.map {
@@ -136,13 +133,4 @@ class ApiExtractorService(
             null
         }
     }
-}
-
-data class ExtractResult(
-    val newEndpoints: Int,
-    val updatedEndpoints: Int,
-    val errors: List<String>
-) {
-    val totalEndpoints: Int get() = newEndpoints + updatedEndpoints
-    val hasErrors: Boolean get() = errors.isNotEmpty()
 }
