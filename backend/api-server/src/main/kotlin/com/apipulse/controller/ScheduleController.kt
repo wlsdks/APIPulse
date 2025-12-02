@@ -1,36 +1,26 @@
 package com.apipulse.controller
 
-import com.apipulse.dto.mapper.toResponse
 import com.apipulse.dto.request.CreateScheduleRequest
 import com.apipulse.dto.request.UpdateScheduleRequest
 import com.apipulse.dto.response.ScheduleResponse
-import com.apipulse.model.TestSchedule
-import com.apipulse.repository.ProjectRepository
-import com.apipulse.repository.TestScheduleRepository
-import com.apipulse.service.scheduler.SchedulerService
+import com.apipulse.service.schedule.ScheduleService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import java.time.Instant
 
 @RestController
 @RequestMapping("/api/projects/{projectId}/schedules")
 @CrossOrigin(origins = ["*"])
 class ScheduleController(
-    private val projectRepository: ProjectRepository,
-    private val testScheduleRepository: TestScheduleRepository,
-    private val schedulerService: SchedulerService
+    private val scheduleService: ScheduleService
 ) {
 
     @GetMapping
     fun getSchedules(@PathVariable projectId: String): ResponseEntity<List<ScheduleResponse>> {
-        if (!projectRepository.existsById(projectId)) {
-            return ResponseEntity.notFound().build()
-        }
-
-        val schedules = testScheduleRepository.findByProjectId(projectId)
-        return ResponseEntity.ok(schedules.map { it.toResponse() })
+        return scheduleService.getSchedules(projectId)
+            ?.let { ResponseEntity.ok(it) }
+            ?: ResponseEntity.notFound().build()
     }
 
     @GetMapping("/{id}")
@@ -38,10 +28,9 @@ class ScheduleController(
         @PathVariable projectId: String,
         @PathVariable id: String
     ): ResponseEntity<ScheduleResponse> {
-        return testScheduleRepository.findById(id)
-            .filter { it.project.id == projectId }
-            .map { ResponseEntity.ok(it.toResponse()) }
-            .orElse(ResponseEntity.notFound().build())
+        return scheduleService.getSchedule(projectId, id)
+            ?.let { ResponseEntity.ok(it) }
+            ?: ResponseEntity.notFound().build()
     }
 
     @PostMapping
@@ -49,19 +38,9 @@ class ScheduleController(
         @PathVariable projectId: String,
         @Valid @RequestBody request: CreateScheduleRequest
     ): ResponseEntity<ScheduleResponse> {
-        val project = projectRepository.findById(projectId).orElse(null)
-            ?: return ResponseEntity.notFound().build()
-
-        val schedule = TestSchedule(
-            project = project,
-            name = request.name,
-            cronExpression = request.cronExpression,
-            notifyOnFailure = request.notifyOnFailure ?: true,
-            notifyOnSuccess = request.notifyOnSuccess ?: false
-        )
-
-        val saved = schedulerService.createSchedule(schedule)
-        return ResponseEntity.status(HttpStatus.CREATED).body(saved.toResponse())
+        return scheduleService.createSchedule(projectId, request)
+            ?.let { ResponseEntity.status(HttpStatus.CREATED).body(it) }
+            ?: ResponseEntity.notFound().build()
     }
 
     @PutMapping("/{id}")
@@ -70,20 +49,9 @@ class ScheduleController(
         @PathVariable id: String,
         @Valid @RequestBody request: UpdateScheduleRequest
     ): ResponseEntity<ScheduleResponse> {
-        return testScheduleRepository.findById(id)
-            .filter { it.project.id == projectId }
-            .map { schedule ->
-                request.name?.let { schedule.name = it }
-                request.cronExpression?.let { schedule.cronExpression = it }
-                request.enabled?.let { schedule.enabled = it }
-                request.notifyOnFailure?.let { schedule.notifyOnFailure = it }
-                request.notifyOnSuccess?.let { schedule.notifyOnSuccess = it }
-                schedule.updatedAt = Instant.now()
-
-                val updated = schedulerService.updateSchedule(schedule)
-                ResponseEntity.ok(updated.toResponse())
-            }
-            .orElse(ResponseEntity.notFound().build())
+        return scheduleService.updateSchedule(projectId, id, request)
+            ?.let { ResponseEntity.ok(it) }
+            ?: ResponseEntity.notFound().build()
     }
 
     @DeleteMapping("/{id}")
@@ -91,13 +59,11 @@ class ScheduleController(
         @PathVariable projectId: String,
         @PathVariable id: String
     ): ResponseEntity<Void> {
-        return testScheduleRepository.findById(id)
-            .filter { it.project.id == projectId }
-            .map {
-                schedulerService.deleteSchedule(id)
-                ResponseEntity.noContent().build<Void>()
-            }
-            .orElse(ResponseEntity.notFound().build())
+        return if (scheduleService.deleteSchedule(projectId, id)) {
+            ResponseEntity.noContent().build()
+        } else {
+            ResponseEntity.notFound().build()
+        }
     }
 
     @PostMapping("/{id}/pause")
@@ -105,13 +71,9 @@ class ScheduleController(
         @PathVariable projectId: String,
         @PathVariable id: String
     ): ResponseEntity<ScheduleResponse> {
-        return testScheduleRepository.findById(id)
-            .filter { it.project.id == projectId }
-            .map {
-                schedulerService.pauseSchedule(id)
-                ResponseEntity.ok(testScheduleRepository.findById(id).get().toResponse())
-            }
-            .orElse(ResponseEntity.notFound().build())
+        return scheduleService.pauseSchedule(projectId, id)
+            ?.let { ResponseEntity.ok(it) }
+            ?: ResponseEntity.notFound().build()
     }
 
     @PostMapping("/{id}/resume")
@@ -119,12 +81,8 @@ class ScheduleController(
         @PathVariable projectId: String,
         @PathVariable id: String
     ): ResponseEntity<ScheduleResponse> {
-        return testScheduleRepository.findById(id)
-            .filter { it.project.id == projectId }
-            .map {
-                schedulerService.resumeSchedule(id)
-                ResponseEntity.ok(testScheduleRepository.findById(id).get().toResponse())
-            }
-            .orElse(ResponseEntity.notFound().build())
+        return scheduleService.resumeSchedule(projectId, id)
+            ?.let { ResponseEntity.ok(it) }
+            ?: ResponseEntity.notFound().build()
     }
 }
