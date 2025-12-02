@@ -3,6 +3,8 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input, Select, Textarea } from '@/components/ui/input';
+import { useLanguage } from '@/contexts/language-context';
+import { useToast } from '@/contexts/toast-context';
 import { createProject } from '@/lib/api';
 import type { AuthType, CreateProjectRequest } from '@/types';
 import { useMutation } from '@tanstack/react-query';
@@ -12,6 +14,8 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 export default function NewProjectPage() {
+  const { t } = useLanguage();
+  const { showError, showSuccess } = useToast();
   const router = useRouter();
   const [formData, setFormData] = useState<CreateProjectRequest>({
     name: '',
@@ -26,7 +30,11 @@ export default function NewProjectPage() {
   const createMutation = useMutation({
     mutationFn: createProject,
     onSuccess: (project) => {
+      showSuccess(t('success.projectCreated'));
       router.push(`/projects/${project.id}`);
+    },
+    onError: (error) => {
+      showError(error);
     },
   });
 
@@ -36,10 +44,10 @@ export default function NewProjectPage() {
   };
 
   const authTypeOptions = [
-    { value: 'NONE', label: 'No Authentication' },
-    { value: 'BEARER_TOKEN', label: 'Bearer Token' },
-    { value: 'API_KEY', label: 'API Key' },
-    { value: 'BASIC_AUTH', label: 'Basic Auth' },
+    { value: 'NONE', label: t('project.authNone') },
+    { value: 'BEARER_TOKEN', label: t('project.authBearer') },
+    { value: 'API_KEY', label: t('project.authApiKey') },
+    { value: 'BASIC_AUTH', label: t('project.authBasic') },
   ];
 
   return (
@@ -47,55 +55,55 @@ export default function NewProjectPage() {
       <div className="mb-6">
         <Link href="/projects" className="inline-flex items-center text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Projects
+          {t('project.backToProjects')}
         </Link>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Create New Project</CardTitle>
+          <CardTitle>{t('project.createNew')}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <Input
-              label="Project Name"
-              placeholder="My API Project"
+              label={t('project.projectName')}
+              placeholder={t('project.projectNamePlaceholder')}
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
             />
 
             <Input
-              label="Base URL"
-              placeholder="https://api.example.com"
+              label={t('project.baseUrl')}
+              placeholder={t('project.baseUrlPlaceholder')}
               value={formData.baseUrl}
               onChange={(e) => setFormData({ ...formData, baseUrl: e.target.value })}
               required
             />
 
             <Textarea
-              label="Description"
-              placeholder="Describe your project..."
+              label={t('project.description')}
+              placeholder={t('project.descriptionPlaceholder')}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
             />
 
             <Input
-              label="Swagger/OpenAPI URL"
-              placeholder="https://api.example.com/v3/api-docs"
+              label={t('project.swaggerUrl')}
+              placeholder={t('project.swaggerUrlPlaceholder')}
               value={formData.swaggerUrl}
               onChange={(e) => setFormData({ ...formData, swaggerUrl: e.target.value })}
             />
             <p className="text-sm text-gray-500 dark:text-gray-400 -mt-4">
-              If provided, endpoints will be automatically imported from the OpenAPI specification.
+              {t('project.swaggerHint')}
             </p>
 
             <div className="border-t border-gray-200 dark:border-gray-800 pt-6">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Authentication</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">{t('project.authentication')}</h3>
 
               <Select
-                label="Authentication Type"
+                label={t('project.authType')}
                 options={authTypeOptions}
                 value={formData.authType}
                 onChange={(e) => setFormData({ ...formData, authType: e.target.value as AuthType })}
@@ -106,7 +114,7 @@ export default function NewProjectPage() {
                   {formData.authType === 'API_KEY' && (
                     <div className="mt-4">
                       <Input
-                        label="Header Name"
+                        label={t('project.headerName')}
                         placeholder="X-API-Key"
                         value={formData.headerName}
                         onChange={(e) => setFormData({ ...formData, headerName: e.target.value })}
@@ -116,7 +124,7 @@ export default function NewProjectPage() {
 
                   <div className="mt-4">
                     <Input
-                      label={formData.authType === 'BEARER_TOKEN' ? 'Token' : formData.authType === 'API_KEY' ? 'API Key' : 'Credentials (base64)'}
+                      label={formData.authType === 'BEARER_TOKEN' ? t('project.token') : formData.authType === 'API_KEY' ? t('project.authApiKey') : t('project.credentials')}
                       placeholder={formData.authType === 'BEARER_TOKEN' ? 'eyJhbGciOiJIUzI1NiIs...' : ''}
                       type="password"
                       value={formData.authValue}
@@ -130,17 +138,17 @@ export default function NewProjectPage() {
             <div className="flex justify-end gap-3 pt-4">
               <Link href="/projects">
                 <Button type="button" variant="outline">
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
               </Link>
               <Button type="submit" loading={createMutation.isPending}>
-                Create Project
+                {t('project.createProject')}
               </Button>
             </div>
 
             {createMutation.isError && (
               <p className="text-red-500 text-sm">
-                Failed to create project. Please try again.
+                {t('project.createFailed')}
               </p>
             )}
           </form>

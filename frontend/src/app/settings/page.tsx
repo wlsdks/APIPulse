@@ -127,12 +127,12 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <Input
-            label="API Base URL"
+            label={t('settings.apiBaseUrl')}
             value={process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}
             disabled
           />
           <p className="text-sm text-gray-500">
-            Set the NEXT_PUBLIC_API_URL environment variable to change this.
+            {t('settings.apiUrlHint')}
           </p>
         </CardContent>
       </Card>
@@ -152,11 +152,11 @@ export default function SettingsPage() {
         <CardContent>
           <div className="space-y-2 text-sm">
             <p className="text-gray-500">
-              Database type is configured via the APIPULSE_PROFILE environment variable on the backend.
+              {t('settings.databaseHint')}
             </p>
             <ul className="list-disc list-inside text-gray-600 dark:text-gray-400">
-              <li><code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">sqlite</code> - SQLite (default)</li>
-              <li><code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">postgresql</code> - PostgreSQL</li>
+              <li><code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">sqlite</code> - {t('settings.databaseSqlite')}</li>
+              <li><code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">postgresql</code> - {t('settings.databasePostgres')}</li>
             </ul>
           </div>
         </CardContent>
@@ -176,9 +176,9 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-            <p><strong>Version:</strong> 1.0.0</p>
-            <p><strong>Backend:</strong> Spring Boot 4.0.0 (Kotlin)</p>
-            <p><strong>Frontend:</strong> Next.js 16</p>
+            <p><strong>{t('settings.version')}:</strong> 1.0.0</p>
+            <p><strong>{t('settings.backendStack')}:</strong> Spring Boot 4.0.0 (Kotlin)</p>
+            <p><strong>{t('settings.frontendStack')}:</strong> Next.js 16</p>
             <p className="pt-2">
               <a
                 href="https://github.com/wlsdks/APIPulse"
@@ -186,7 +186,7 @@ export default function SettingsPage() {
                 rel="noopener noreferrer"
                 className="text-blue-500 hover:underline"
               >
-                View on GitHub
+                {t('settings.viewOnGithub')}
               </a>
             </p>
           </div>

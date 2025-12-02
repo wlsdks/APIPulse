@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input, Select } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
+import { useLanguage } from '@/contexts/language-context';
+import { useToast } from '@/contexts/toast-context';
 import { createNotification, deleteNotification, getNotifications } from '@/lib/api';
 import type { CreateNotificationRequest, NotificationType } from '@/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -12,6 +14,8 @@ import { Bell, Mail, MessageSquare, Plus, RefreshCw, Trash2 } from 'lucide-react
 import { useState } from 'react';
 
 export default function NotificationsPage() {
+  const { t } = useLanguage();
+  const { showError, showSuccess } = useToast();
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState<CreateNotificationRequest>({
@@ -34,6 +38,10 @@ export default function NotificationsPage() {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       setIsModalOpen(false);
       setFormData({ name: '', type: 'SLACK', webhookUrl: '', emailRecipients: '' });
+      showSuccess(t('success.notificationSent'));
+    },
+    onError: (error) => {
+      showError(error);
     },
   });
 
@@ -41,6 +49,9 @@ export default function NotificationsPage() {
     mutationFn: deleteNotification,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+    onError: (error) => {
+      showError(error);
     },
   });
 
@@ -61,9 +72,9 @@ export default function NotificationsPage() {
   };
 
   const typeOptions = [
-    { value: 'SLACK', label: 'Slack' },
-    { value: 'DISCORD', label: 'Discord' },
-    { value: 'EMAIL', label: 'Email' },
+    { value: 'SLACK', label: t('notifications.slack') },
+    { value: 'DISCORD', label: t('notifications.discord') },
+    { value: 'EMAIL', label: t('notifications.email') },
   ];
 
   if (isLoading) {
@@ -78,12 +89,12 @@ export default function NotificationsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Notifications</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Configure alerts for API failures</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('notifications.title')}</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">{t('notifications.subtitle')}</p>
         </div>
         <Button onClick={() => setIsModalOpen(true)}>
           <Plus className="w-4 h-4 mr-2" />
-          Add Channel
+          {t('notifications.add')}
         </Button>
       </div>
 
@@ -93,11 +104,11 @@ export default function NotificationsPage() {
             <div className="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-6">
               <Bell className="w-10 h-10 text-gray-400" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No notification channels</h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-6">Add a channel to receive alerts when API tests fail</p>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{t('notifications.noChannels')}</h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">{t('notifications.addDescription')}</p>
             <Button onClick={() => setIsModalOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
-              Add Your First Channel
+              {t('notifications.addFirst')}
             </Button>
           </CardContent>
         </Card>
@@ -113,7 +124,7 @@ export default function NotificationsPage() {
                   <CardTitle className="text-base">{notification.name}</CardTitle>
                 </div>
                 <Badge variant={notification.enabled ? 'success' : 'default'}>
-                  {notification.enabled ? 'Active' : 'Disabled'}
+                  {notification.enabled ? t('notifications.active') : t('common.disabled')}
                 </Badge>
               </CardHeader>
               <CardContent>
@@ -121,17 +132,17 @@ export default function NotificationsPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex gap-2">
                     {notification.notifyOnFailure && (
-                      <Badge variant="error">On Failure</Badge>
+                      <Badge variant="error">{t('notifications.onFailure')}</Badge>
                     )}
                     {notification.notifyOnRecovery && (
-                      <Badge variant="success">On Recovery</Badge>
+                      <Badge variant="success">{t('notifications.onRecovery')}</Badge>
                     )}
                   </div>
                   <Button
                     size="sm"
                     variant="ghost"
                     onClick={() => {
-                      if (confirm('Delete this notification channel?')) {
+                      if (confirm(t('notifications.confirmDelete'))) {
                         deleteMutation.mutate(notification.id);
                       }
                     }}
@@ -145,18 +156,18 @@ export default function NotificationsPage() {
         </div>
       )}
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add Notification Channel">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={t('notifications.addModal')}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
-            label="Channel Name"
-            placeholder="Production Alerts"
+            label={t('notifications.channelName')}
+            placeholder={t('notifications.channelNamePlaceholder')}
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             required
           />
 
           <Select
-            label="Type"
+            label={t('notifications.type')}
             options={typeOptions}
             value={formData.type}
             onChange={(e) => setFormData({ ...formData, type: e.target.value as NotificationType })}
@@ -164,8 +175,8 @@ export default function NotificationsPage() {
 
           {(formData.type === 'SLACK' || formData.type === 'DISCORD') && (
             <Input
-              label="Webhook URL"
-              placeholder="https://hooks.slack.com/..."
+              label={t('notifications.webhook')}
+              placeholder={t('notifications.webhookPlaceholder')}
               value={formData.webhookUrl}
               onChange={(e) => setFormData({ ...formData, webhookUrl: e.target.value })}
               required
@@ -174,8 +185,8 @@ export default function NotificationsPage() {
 
           {formData.type === 'EMAIL' && (
             <Input
-              label="Email Recipients"
-              placeholder="dev@example.com, ops@example.com"
+              label={t('notifications.emailRecipients')}
+              placeholder={t('notifications.emailRecipientsPlaceholder')}
               value={formData.emailRecipients}
               onChange={(e) => setFormData({ ...formData, emailRecipients: e.target.value })}
               required
@@ -190,7 +201,7 @@ export default function NotificationsPage() {
                 onChange={(e) => setFormData({ ...formData, notifyOnFailure: e.target.checked })}
                 className="rounded"
               />
-              <span className="text-sm">Notify on failure</span>
+              <span className="text-sm">{t('notifications.notifyOnFailure')}</span>
             </label>
             <label className="flex items-center gap-2">
               <input
@@ -199,16 +210,16 @@ export default function NotificationsPage() {
                 onChange={(e) => setFormData({ ...formData, notifyOnRecovery: e.target.checked })}
                 className="rounded"
               />
-              <span className="text-sm">Notify on recovery</span>
+              <span className="text-sm">{t('notifications.notifyOnRecovery')}</span>
             </label>
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" loading={createMutation.isPending}>
-              Add Channel
+              {t('notifications.add')}
             </Button>
           </div>
         </form>
