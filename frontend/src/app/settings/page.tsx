@@ -1,13 +1,12 @@
 'use client';
 
-import { FadeInUp, StaggerContainer, StaggerItem } from '@/components/motion';
+import { StaggerContainer, StaggerItem } from '@/components/motion';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { useLanguage } from '@/contexts/language-context';
 import { useTheme } from '@/contexts/theme-context';
 import { cn } from '@/lib/utils';
-import { Check, Database, Globe, Monitor, Moon, Palette, Server, Sun } from 'lucide-react';
+import { Check, Database, Globe, Monitor, Moon, Palette, Sun } from 'lucide-react';
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
@@ -121,31 +120,6 @@ export default function SettingsPage() {
                 ))}
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </StaggerItem>
-
-      {/* Backend Connection */}
-      <StaggerItem>
-        <Card variant="elevated">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                <Server className="w-5 h-5 text-blue-500" />
-              </div>
-              <div>
-                <CardTitle>{t('settings.backend')}</CardTitle>
-                <CardDescription>{t('settings.backendDesc')}</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Input
-              label={t('settings.apiBaseUrl')}
-              value={process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}
-              disabled
-            />
-            <p className="text-sm text-gray-500">{t('settings.apiUrlHint')}</p>
           </CardContent>
         </Card>
       </StaggerItem>
