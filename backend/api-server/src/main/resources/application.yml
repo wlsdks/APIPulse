@@ -1,0 +1,68 @@
+spring:
+  application:
+    name: api-pulse
+
+  profiles:
+    active: ${APIPULSE_PROFILE:sqlite}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+server:
+  port: ${SERVER_PORT:8080}
+
+# APIPulse Custom Configuration
+apipulse:
+  notification:
+    slack:
+      webhook-url: ${SLACK_WEBHOOK_URL:}
+    discord:
+      webhook-url: ${DISCORD_WEBHOOK_URL:}
+    email:
+      enabled: ${EMAIL_NOTIFICATION_ENABLED:false}
+      recipients: ${EMAIL_RECIPIENTS:}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: sqlite
+
+  datasource:
+    url: jdbc:sqlite:${APIPULSE_DB_PATH:./apipulse.db}
+    driver-class-name: org.sqlite.JDBC
+
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+
+---
+spring:
+  config:
+    activate:
+      on-profile: postgresql
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:apipulse}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
