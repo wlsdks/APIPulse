@@ -1,6 +1,7 @@
 'use client';
 
 import { LanguageProvider } from '@/contexts/language-context';
+import { SidebarProvider } from '@/contexts/sidebar-context';
 import { ThemeProvider } from '@/contexts/theme-context';
 import { ToastProvider } from '@/contexts/toast-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -23,7 +24,9 @@ export function Providers({ children }: { children: ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <LanguageProvider>
-          <ToastProvider>{children}</ToastProvider>
+          <SidebarProvider>
+            <ToastProvider>{children}</ToastProvider>
+          </SidebarProvider>
         </LanguageProvider>
       </ThemeProvider>
     </QueryClientProvider>
