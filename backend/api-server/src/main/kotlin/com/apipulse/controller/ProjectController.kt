@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/api/projects")
-@CrossOrigin(origins = ["*"])
 class ProjectController(
     private val projectService: ProjectService
 ) {

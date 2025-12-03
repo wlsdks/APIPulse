@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/api/projects/{projectId}/schedules")
-@CrossOrigin(origins = ["*"])
 class ScheduleController(
     private val scheduleService: ScheduleService
 ) {

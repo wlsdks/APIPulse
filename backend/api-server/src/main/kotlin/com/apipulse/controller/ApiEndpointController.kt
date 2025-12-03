@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/api/projects/{projectId}/endpoints")
-@CrossOrigin(origins = ["*"])
 class ApiEndpointController(
     private val endpointService: EndpointService
 ) {

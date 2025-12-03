@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/api/projects/{projectId}/tests")
-@CrossOrigin(origins = ["*"])
 class TestController(
     private val testService: TestService
 ) {
