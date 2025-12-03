@@ -6,6 +6,7 @@ import com.apipulse.repository.ProjectRepository
 import com.apipulse.repository.TestScheduleRepository
 import com.apipulse.service.notifier.NotificationService
 import com.apipulse.service.tester.ApiTesterService
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.quartz.Job
 import org.quartz.JobExecutionContext
@@ -28,7 +29,7 @@ class ApiTestJob : Job {
 
         logger.info("Executing scheduled test for project: $projectId")
 
-        runBlocking {
+        runBlocking(Dispatchers.IO) {
             try {
                 val result = apiTesterService.testProject(projectId, TriggerType.SCHEDULED, scheduleId)
 

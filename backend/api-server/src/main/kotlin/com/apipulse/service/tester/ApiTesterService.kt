@@ -7,6 +7,7 @@ import com.apipulse.repository.TestResultRepository
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import kotlinx.coroutines.*
+import kotlinx.coroutines.reactor.awaitSingle
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
@@ -72,7 +73,7 @@ class ApiTesterService(
                                 )
                             }
                     }
-                    .block()
+                    .awaitSingle()
             }
 
             val responseTimeMs = System.currentTimeMillis() - startTime

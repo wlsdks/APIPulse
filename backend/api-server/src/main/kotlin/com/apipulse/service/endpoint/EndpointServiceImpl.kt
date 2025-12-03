@@ -12,6 +12,7 @@ import com.apipulse.model.TriggerType
 import com.apipulse.repository.ApiEndpointRepository
 import com.apipulse.repository.ProjectRepository
 import com.apipulse.service.tester.ApiTesterService
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -110,7 +111,7 @@ class EndpointServiceImpl(
             .filter { it.project.id == projectId }
             .orElseThrow { EndpointNotFoundException(endpointId) }
 
-        val result = runBlocking {
+        val result = runBlocking(Dispatchers.IO) {
             apiTesterService.testEndpoint(endpoint, TriggerType.MANUAL)
         }
 

@@ -13,6 +13,7 @@ import com.apipulse.repository.ProjectRepository
 import com.apipulse.repository.TestResultRepository
 import com.apipulse.service.notifier.NotificationService
 import com.apipulse.service.tester.ApiTesterService
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -33,7 +34,7 @@ class TestServiceImpl(
         val project = projectRepository.findById(projectId)
             .orElseThrow { ProjectNotFoundException(projectId) }
 
-        val result = runBlocking {
+        val result = runBlocking(Dispatchers.IO) {
             apiTesterService.testProject(projectId, TriggerType.MANUAL)
         }
 
