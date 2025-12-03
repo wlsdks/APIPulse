@@ -3,6 +3,7 @@
 import { MethodBadge, StatusBadge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useLanguage } from '@/contexts/language-context';
 import {
   getEndpoints,
   getLatestResults,
@@ -24,6 +25,7 @@ interface PageProps {
 
 export default function ProjectDetailPage({ params }: PageProps) {
   const { id } = use(params);
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
 
   const { data: project, isLoading: projectLoading } = useQuery({
@@ -85,9 +87,9 @@ export default function ProjectDetailPage({ params }: PageProps) {
   if (!project) {
     return (
       <div className="flex flex-col items-center justify-center h-64">
-        <p className="text-gray-500 mb-4">Project not found</p>
+        <p className="text-gray-500 mb-4">{t('project.notFound')}</p>
         <Link href="/projects">
-          <Button>Back to Projects</Button>
+          <Button>{t('project.backToProjects')}</Button>
         </Link>
       </div>
     );
@@ -106,11 +108,11 @@ export default function ProjectDetailPage({ params }: PageProps) {
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending}>
             <RefreshCw className={cn('w-4 h-4 mr-2', syncMutation.isPending && 'animate-spin')} />
-            Sync APIs
+            {t('project.syncApis')}
           </Button>
           <Button onClick={() => runAllMutation.mutate()} disabled={runAllMutation.isPending}>
             <Zap className={cn('w-4 h-4 mr-2', runAllMutation.isPending && 'animate-spin')} />
-            Run All Tests
+            {t('project.runAllTests')}
           </Button>
         </div>
       </div>
@@ -120,13 +122,13 @@ export default function ProjectDetailPage({ params }: PageProps) {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="pt-4">
-              <p className="text-sm text-gray-500">Total Tests</p>
+              <p className="text-sm text-gray-500">{t('project.totalTests')}</p>
               <p className="text-2xl font-bold">{stats.totalTests}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4">
-              <p className="text-sm text-gray-500">Success Rate</p>
+              <p className="text-sm text-gray-500">{t('project.successRate')}</p>
               <p className={cn('text-2xl font-bold', stats.successRate >= 90 ? 'text-green-500' : 'text-yellow-500')}>
                 {stats.successRate.toFixed(1)}%
               </p>
@@ -134,13 +136,13 @@ export default function ProjectDetailPage({ params }: PageProps) {
           </Card>
           <Card>
             <CardContent className="pt-4">
-              <p className="text-sm text-gray-500">Failed</p>
+              <p className="text-sm text-gray-500">{t('project.failed')}</p>
               <p className="text-2xl font-bold text-red-500">{stats.failedCount}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4">
-              <p className="text-sm text-gray-500">Avg Response</p>
+              <p className="text-sm text-gray-500">{t('project.avgResponse')}</p>
               <p className="text-2xl font-bold">{stats.averageResponseTimeMs}ms</p>
             </CardContent>
           </Card>
@@ -150,12 +152,12 @@ export default function ProjectDetailPage({ params }: PageProps) {
       {/* Endpoints */}
       <Card>
         <CardHeader>
-          <CardTitle>Endpoints ({endpoints?.length || 0})</CardTitle>
+          <CardTitle>{t('project.endpoints')} ({endpoints?.length || 0})</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {!endpoints?.length ? (
             <div className="p-8 text-center text-gray-500">
-              No endpoints yet. Click &quot;Sync APIs&quot; to import from Swagger.
+              {t('project.noEndpoints')}
             </div>
           ) : (
             <div className="divide-y divide-gray-200 dark:divide-gray-800">

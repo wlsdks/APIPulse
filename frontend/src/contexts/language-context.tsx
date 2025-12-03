@@ -56,9 +56,16 @@ const translations: Record<Language, Translations> = {
     'project.schedules': 'Schedules',
     'project.history': 'History',
     'project.runTests': 'Run Tests',
+    'project.runAllTests': 'Run All Tests',
     'project.syncApis': 'Sync APIs',
     'project.addEndpoint': 'Add Endpoint',
     'project.addSchedule': 'Add Schedule',
+    'project.notFound': 'Project not found',
+    'project.noEndpoints': 'No endpoints yet. Click "Sync APIs" to import from Swagger.',
+    'project.totalTests': 'Total Tests',
+    'project.successRate': 'Success Rate',
+    'project.failed': 'Failed',
+    'project.avgResponse': 'Avg Response',
 
     // New Project
     'project.backToProjects': 'Back to Projects',
@@ -213,9 +220,16 @@ const translations: Record<Language, Translations> = {
     'project.schedules': '스케줄',
     'project.history': '이력',
     'project.runTests': '테스트 실행',
+    'project.runAllTests': '전체 테스트 실행',
     'project.syncApis': 'API 동기화',
     'project.addEndpoint': '엔드포인트 추가',
     'project.addSchedule': '스케줄 추가',
+    'project.notFound': '프로젝트를 찾을 수 없습니다',
+    'project.noEndpoints': '엔드포인트가 없습니다. "API 동기화"를 클릭하여 Swagger에서 가져오세요.',
+    'project.totalTests': '전체 테스트',
+    'project.successRate': '성공률',
+    'project.failed': '실패',
+    'project.avgResponse': '평균 응답시간',
 
     // New Project
     'project.backToProjects': '프로젝트 목록으로',
