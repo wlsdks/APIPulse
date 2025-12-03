@@ -89,6 +89,7 @@ const translations: Record<Language, Translations> = {
     'project.headerName': 'Header Name',
     'project.token': 'Token',
     'project.credentials': 'Credentials (base64)',
+    'project.basicAuthHint': 'Enter base64 encoded credentials in the format: base64(username:password)',
     'project.createProject': 'Create Project',
     'project.createFailed': 'Failed to create project. Please try again.',
 
@@ -253,6 +254,7 @@ const translations: Record<Language, Translations> = {
     'project.headerName': '헤더 이름',
     'project.token': '토큰',
     'project.credentials': '자격 증명 (base64)',
+    'project.basicAuthHint': 'base64(사용자명:비밀번호) 형식으로 인코딩된 자격 증명을 입력하세요',
     'project.createProject': '프로젝트 생성',
     'project.createFailed': '프로젝트 생성에 실패했습니다. 다시 시도해주세요.',
 

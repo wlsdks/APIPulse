@@ -225,12 +225,19 @@ export default function NewProjectPage() {
                           : t('project.credentials')
                     }
                     placeholder={
-                      formData.authType === 'BEARER_TOKEN' ? 'eyJhbGciOiJIUzI1NiIs...' : ''
+                      formData.authType === 'BEARER_TOKEN'
+                        ? 'eyJhbGciOiJIUzI1NiIs...'
+                        : formData.authType === 'BASIC_AUTH'
+                          ? 'dXNlcm5hbWU6cGFzc3dvcmQ='
+                          : ''
                     }
                     type="password"
                     value={formData.authValue}
                     onChange={(e) => setFormData({ ...formData, authValue: e.target.value })}
                   />
+                  {formData.authType === 'BASIC_AUTH' && (
+                    <p className="text-sm text-gray-500">{t('project.basicAuthHint')}</p>
+                  )}
                 </div>
               )}
             </div>
