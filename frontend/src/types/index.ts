@@ -26,6 +26,9 @@ export interface ApiEndpoint {
   summary?: string;
   description?: string;
   sampleRequestBody?: string;
+  queryParams?: string;
+  pathParams?: string;
+  headers?: string;
   expectedStatusCode: number;
   enabled: boolean;
   createdAt: string;
@@ -128,6 +131,9 @@ export interface CreateEndpointRequest {
   summary?: string;
   description?: string;
   sampleRequestBody?: string;
+  queryParams?: string;
+  pathParams?: string;
+  headers?: string;
   expectedStatusCode?: number;
 }
 

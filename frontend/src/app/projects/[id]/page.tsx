@@ -21,7 +21,7 @@ import { cn, formatRelativeTime } from '@/lib/utils';
 import type { CreateEndpointRequest, HttpMethod } from '@/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, Link as LinkIcon, Play, Plus, RefreshCw, Settings, Trash2, X, Zap } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Link as LinkIcon, Play, Plus, RefreshCw, Settings, Trash2, X, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { use, useState } from 'react';
 
@@ -44,8 +44,12 @@ export default function ProjectDetailPage({ params }: PageProps) {
     method: 'GET',
     summary: '',
     description: '',
+    sampleRequestBody: '',
+    queryParams: '',
+    headers: '',
     expectedStatusCode: 200,
   });
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const { data: project, isLoading: projectLoading } = useQuery({
     queryKey: ['project', id],
@@ -125,8 +129,12 @@ export default function ProjectDetailPage({ params }: PageProps) {
         method: 'GET',
         summary: '',
         description: '',
+        sampleRequestBody: '',
+        queryParams: '',
+        headers: '',
         expectedStatusCode: 200,
       });
+      setShowAdvanced(false);
     },
     onError: (error) => {
       showError(error);
@@ -476,7 +484,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
                 </button>
               </div>
 
-              <form onSubmit={handleAddEndpoint} className="p-6 space-y-4">
+              <form onSubmit={handleAddEndpoint} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
                 <div className="grid grid-cols-3 gap-4">
                   <Select
                     label={t('project.method')}
@@ -517,6 +525,53 @@ export default function ProjectDetailPage({ params }: PageProps) {
                   value={endpointForm.expectedStatusCode || 200}
                   onChange={(e) => setEndpointForm({ ...endpointForm, expectedStatusCode: parseInt(e.target.value) || 200 })}
                 />
+
+                {/* Advanced Options Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  className="flex items-center gap-2 text-sm text-blue-500 hover:text-blue-600 transition-colors"
+                >
+                  <ChevronDown className={cn('w-4 h-4 transition-transform', showAdvanced && 'rotate-180')} />
+                  {t('project.advancedOptions')}
+                </button>
+
+                {/* Advanced Options */}
+                <AnimatePresence>
+                  {showAdvanced && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-4 overflow-hidden"
+                    >
+                      <Textarea
+                        label={t('project.headers')}
+                        placeholder={t('project.headersPlaceholder')}
+                        value={endpointForm.headers || ''}
+                        onChange={(e) => setEndpointForm({ ...endpointForm, headers: e.target.value })}
+                        rows={3}
+                      />
+
+                      <Textarea
+                        label={t('project.queryParams')}
+                        placeholder={t('project.queryParamsPlaceholder')}
+                        value={endpointForm.queryParams || ''}
+                        onChange={(e) => setEndpointForm({ ...endpointForm, queryParams: e.target.value })}
+                        rows={3}
+                      />
+
+                      <Textarea
+                        label={t('project.requestBody')}
+                        placeholder={t('project.requestBodyPlaceholder')}
+                        value={endpointForm.sampleRequestBody || ''}
+                        onChange={(e) => setEndpointForm({ ...endpointForm, sampleRequestBody: e.target.value })}
+                        rows={4}
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <Button type="button" variant="outline" onClick={() => setShowAddModal(false)}>
