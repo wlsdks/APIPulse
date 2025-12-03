@@ -191,6 +191,7 @@ const translations: Record<Language, Translations> = {
     'success.testCompleted': 'Test completed successfully',
     'success.syncCompleted': 'API sync completed',
     'success.testsCompleted': 'All tests completed',
+    'success.saved': 'Saved successfully',
     'success.notificationSent': 'Notification sent successfully',
   },
   ko: {
@@ -369,6 +370,7 @@ const translations: Record<Language, Translations> = {
     'success.testCompleted': '테스트가 완료되었습니다',
     'success.syncCompleted': 'API 동기화가 완료되었습니다',
     'success.testsCompleted': '모든 테스트가 완료되었습니다',
+    'success.saved': '저장되었습니다',
     'success.notificationSent': '알림이 전송되었습니다',
   },
 };

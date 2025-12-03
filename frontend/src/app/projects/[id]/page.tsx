@@ -21,7 +21,7 @@ import { cn, formatRelativeTime } from '@/lib/utils';
 import type { CreateEndpointRequest, HttpMethod } from '@/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, Link as LinkIcon, Play, Plus, RefreshCw, Trash2, X, Zap } from 'lucide-react';
+import { ArrowLeft, Link as LinkIcon, Play, Plus, RefreshCw, Settings, Trash2, X, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { use, useState } from 'react';
 
@@ -146,25 +146,34 @@ export default function ProjectDetailPage({ params }: PageProps) {
     if (hasSwaggerUrls) {
       syncMutation.mutate();
     } else {
-      setSwaggerUrls(project?.swaggerUrls?.length ? [...project.swaggerUrls] : ['']);
-      setShowSwaggerModal(true);
+      openSwaggerModal();
+    }
+  };
+
+  const openSwaggerModal = () => {
+    setSwaggerUrls(project?.swaggerUrls?.length ? [...project.swaggerUrls] : ['']);
+    setShowSwaggerModal(true);
+  };
+
+  const handleSwaggerSave = async (shouldSync: boolean) => {
+    const filteredUrls = swaggerUrls.filter((url) => url.trim() !== '');
+
+    try {
+      await updateProjectMutation.mutateAsync({ swaggerUrls: filteredUrls });
+      if (shouldSync && filteredUrls.length > 0) {
+        syncMutation.mutate();
+      } else {
+        showSuccess(t('success.saved'));
+        setShowSwaggerModal(false);
+      }
+    } catch {
+      // Error already handled by mutation
     }
   };
 
   const handleSwaggerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const filteredUrls = swaggerUrls.filter((url) => url.trim() !== '');
-    if (filteredUrls.length === 0) {
-      showError({ message: t('project.swaggerUrlRequired') } as Error);
-      return;
-    }
-
-    try {
-      await updateProjectMutation.mutateAsync({ swaggerUrls: filteredUrls });
-      syncMutation.mutate();
-    } catch {
-      // Error already handled by mutation
-    }
+    handleSwaggerSave(true);
   };
 
   const addSwaggerUrl = () => {
@@ -214,6 +223,9 @@ export default function ProjectDetailPage({ params }: PageProps) {
           <p className="text-gray-500 dark:text-gray-400">{project.baseUrl}</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="ghost" size="icon" onClick={openSwaggerModal} title={t('project.configureSwagger')}>
+            <Settings className="w-4 h-4" />
+          </Button>
           <Button variant="outline" onClick={handleSyncClick} disabled={syncMutation.isPending}>
             <RefreshCw className={cn('w-4 h-4 mr-2', syncMutation.isPending && 'animate-spin')} />
             {t('project.syncApis')}
@@ -410,6 +422,14 @@ export default function ProjectDetailPage({ params }: PageProps) {
                 <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <Button type="button" variant="outline" onClick={() => setShowSwaggerModal(false)}>
                     {t('common.cancel')}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleSwaggerSave(false)}
+                    loading={updateProjectMutation.isPending}
+                  >
+                    {t('common.save')}
                   </Button>
                   <Button
                     type="submit"
