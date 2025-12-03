@@ -15,7 +15,22 @@ export function formatDate(date: string | Date): string {
   }).format(new Date(date));
 }
 
-export function formatRelativeTime(date: string | Date): string {
+const relativeTimeStrings = {
+  en: {
+    justNow: 'just now',
+    minutesAgo: (n: number) => `${n}m ago`,
+    hoursAgo: (n: number) => `${n}h ago`,
+    daysAgo: (n: number) => `${n}d ago`,
+  },
+  ko: {
+    justNow: '방금 전',
+    minutesAgo: (n: number) => `${n}분 전`,
+    hoursAgo: (n: number) => `${n}시간 전`,
+    daysAgo: (n: number) => `${n}일 전`,
+  },
+};
+
+export function formatRelativeTime(date: string | Date, lang: 'en' | 'ko' = 'en'): string {
   const now = new Date();
   const then = new Date(date);
   const diffMs = now.getTime() - then.getTime();
@@ -24,10 +39,12 @@ export function formatRelativeTime(date: string | Date): string {
   const diffHours = Math.floor(diffMins / 60);
   const diffDays = Math.floor(diffHours / 24);
 
-  if (diffSecs < 60) return 'just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
+  const strings = relativeTimeStrings[lang];
+
+  if (diffSecs < 60) return strings.justNow;
+  if (diffMins < 60) return strings.minutesAgo(diffMins);
+  if (diffHours < 24) return strings.hoursAgo(diffHours);
+  if (diffDays < 7) return strings.daysAgo(diffDays);
   return formatDate(date);
 }
 

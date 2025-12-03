@@ -18,7 +18,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 export default function ProjectsPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { showError, showSuccess } = useToast();
   const queryClient = useQueryClient();
   const [openMenu, setOpenMenu] = useState<string | null>(null);
@@ -126,7 +126,7 @@ export default function ProjectsPage() {
                           <ExternalLink className="w-3.5 h-3.5" />
                           {project.endpointCount} {t('projects.endpoints')}
                         </span>
-                        <span>{formatRelativeTime(project.updatedAt)}</span>
+                        <span>{formatRelativeTime(project.updatedAt, language)}</span>
                       </div>
                     </div>
 

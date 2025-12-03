@@ -25,7 +25,7 @@ interface PageProps {
 
 export default function ProjectDetailPage({ params }: PageProps) {
   const { id } = use(params);
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const queryClient = useQueryClient();
 
   const { data: project, isLoading: projectLoading } = useQuery({
@@ -183,7 +183,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
                         <div className="flex items-center gap-3">
                           <StatusBadge status={result.status} />
                           <span className="text-sm text-gray-500">{result.responseTimeMs}ms</span>
-                          <span className="text-xs text-gray-400">{formatRelativeTime(result.executedAt)}</span>
+                          <span className="text-xs text-gray-400">{formatRelativeTime(result.executedAt, language)}</span>
                         </div>
                       )}
                       <Button
