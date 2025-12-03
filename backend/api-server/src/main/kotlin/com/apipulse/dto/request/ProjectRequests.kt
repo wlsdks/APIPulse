@@ -11,7 +11,7 @@ data class CreateProjectRequest(
     val baseUrl: String,
 
     val description: String? = null,
-    val swaggerUrl: String? = null,
+    val swaggerUrls: List<String> = emptyList(),
     val authType: AuthType = AuthType.NONE,
     val authValue: String? = null,
     val headerName: String? = null
@@ -21,7 +21,7 @@ data class UpdateProjectRequest(
     val name: String? = null,
     val baseUrl: String? = null,
     val description: String? = null,
-    val swaggerUrl: String? = null,
+    val swaggerUrls: List<String>? = null,
     val authType: AuthType? = null,
     val authValue: String? = null,
     val headerName: String? = null,

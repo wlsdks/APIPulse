@@ -37,7 +37,7 @@ class ProjectServiceImpl(
             name = request.name,
             baseUrl = request.baseUrl,
             description = request.description,
-            swaggerUrl = request.swaggerUrl,
+            swaggerUrls = request.swaggerUrls.toMutableList(),
             authType = request.authType,
             authValue = request.authValue,
             headerName = request.headerName
@@ -45,7 +45,7 @@ class ProjectServiceImpl(
 
         val saved = projectRepository.save(project)
 
-        if (!request.swaggerUrl.isNullOrBlank()) {
+        if (request.swaggerUrls.isNotEmpty()) {
             apiExtractorService.extractFromSwagger(saved)
         }
 
@@ -60,7 +60,7 @@ class ProjectServiceImpl(
         request.name?.let { project.name = it }
         request.baseUrl?.let { project.baseUrl = it }
         request.description?.let { project.description = it }
-        request.swaggerUrl?.let { project.swaggerUrl = it }
+        request.swaggerUrls?.let { project.swaggerUrls = it.toMutableList() }
         request.authType?.let { project.authType = it }
         request.authValue?.let { project.authValue = it }
         request.headerName?.let { project.headerName = it }
@@ -83,7 +83,7 @@ class ProjectServiceImpl(
         val project = projectRepository.findById(id)
             .orElseThrow { ProjectNotFoundException(id) }
 
-        if (project.swaggerUrl.isNullOrBlank()) {
+        if (project.swaggerUrls.isEmpty()) {
             throw ProjectSwaggerUrlRequiredException()
         }
 

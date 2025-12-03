@@ -23,9 +23,26 @@ class ApiExtractorService(
 
     @Transactional
     fun extractFromSwagger(project: Project): ExtractResult {
-        val swaggerUrl = project.swaggerUrl
-            ?: return ExtractResult(0, 0, listOf("Swagger URL is not configured"))
+        if (project.swaggerUrls.isEmpty()) {
+            return ExtractResult(0, 0, listOf("Swagger URLs are not configured"))
+        }
 
+        var totalNew = 0
+        var totalUpdated = 0
+        val allErrors = mutableListOf<String>()
+
+        for (swaggerUrl in project.swaggerUrls) {
+            val result = extractFromSingleUrl(project, swaggerUrl)
+            totalNew += result.newEndpoints
+            totalUpdated += result.updatedEndpoints
+            allErrors.addAll(result.errors)
+        }
+
+        logger.info("Extracted endpoints from ${project.name}: total new=$totalNew, updated=$totalUpdated from ${project.swaggerUrls.size} URLs")
+        return ExtractResult(totalNew, totalUpdated, allErrors)
+    }
+
+    private fun extractFromSingleUrl(project: Project, swaggerUrl: String): ExtractResult {
         return try {
             val parseOptions = ParseOptions().apply {
                 isResolve = true
@@ -35,7 +52,7 @@ class ApiExtractorService(
             val result = OpenAPIV3Parser().readLocation(swaggerUrl, null, parseOptions)
 
             if (result.openAPI == null) {
-                val errors = result.messages ?: listOf("Failed to parse OpenAPI specification")
+                val errors = result.messages ?: listOf("Failed to parse OpenAPI specification from $swaggerUrl")
                 return ExtractResult(0, 0, errors)
             }
 
@@ -112,12 +129,12 @@ class ApiExtractorService(
             val newCount = savedEndpoints.count { it.createdAt == it.updatedAt }
             val updatedCount = savedEndpoints.size - newCount
 
-            logger.info("Extracted ${savedEndpoints.size} endpoints from ${project.name} (new: $newCount, updated: $updatedCount)")
+            logger.info("Extracted ${savedEndpoints.size} endpoints from $swaggerUrl (new: $newCount, updated: $updatedCount)")
             ExtractResult(newCount, updatedCount, emptyList())
 
         } catch (e: Exception) {
-            logger.error("Failed to extract APIs from ${project.name}", e)
-            ExtractResult(0, 0, listOf(e.message ?: "Unknown error"))
+            logger.error("Failed to extract APIs from $swaggerUrl", e)
+            ExtractResult(0, 0, listOf("$swaggerUrl: ${e.message ?: "Unknown error"}"))
         }
     }
 

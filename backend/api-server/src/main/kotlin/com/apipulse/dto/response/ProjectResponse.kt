@@ -8,7 +8,7 @@ data class ProjectResponse(
     val name: String,
     val baseUrl: String,
     val description: String?,
-    val swaggerUrl: String?,
+    val swaggerUrls: List<String>,
     val authType: AuthType,
     val enabled: Boolean,
     val endpointCount: Int,

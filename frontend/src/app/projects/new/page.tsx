@@ -1,29 +1,38 @@
 'use client';
 
 import { FadeInUp } from '@/components/motion';
-import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input, Select, Textarea } from '@/components/ui/input';
 import { useLanguage } from '@/contexts/language-context';
 import { useToast } from '@/contexts/toast-context';
 import { createProject } from '@/lib/api';
-import type { AuthType, CreateProjectRequest } from '@/types';
+import type { AuthType } from '@/types';
 import { useMutation } from '@tanstack/react-query';
-import { ArrowLeft, Key, Link as LinkIcon, Lock, Shield, Unlock } from 'lucide-react';
+import { ArrowLeft, Key, Link as LinkIcon, Lock, Plus, Shield, Trash2, Unlock } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+
+interface FormData {
+  name: string;
+  baseUrl: string;
+  description: string;
+  swaggerUrls: string[];
+  authType: AuthType;
+  authValue: string;
+  headerName: string;
+}
 
 export default function NewProjectPage() {
   const { t } = useLanguage();
   const { showError, showSuccess } = useToast();
   const router = useRouter();
-  const [formData, setFormData] = useState<CreateProjectRequest>({
+  const [formData, setFormData] = useState<FormData>({
     name: '',
     baseUrl: '',
     description: '',
-    swaggerUrl: '',
+    swaggerUrls: [''],
     authType: 'NONE',
     authValue: '',
     headerName: '',
@@ -42,7 +51,26 @@ export default function NewProjectPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createMutation.mutate(formData);
+    const filteredUrls = formData.swaggerUrls.filter((url) => url.trim() !== '');
+    createMutation.mutate({
+      ...formData,
+      swaggerUrls: filteredUrls.length > 0 ? filteredUrls : undefined,
+    });
+  };
+
+  const addSwaggerUrl = () => {
+    setFormData({ ...formData, swaggerUrls: [...formData.swaggerUrls, ''] });
+  };
+
+  const removeSwaggerUrl = (index: number) => {
+    const newUrls = formData.swaggerUrls.filter((_, i) => i !== index);
+    setFormData({ ...formData, swaggerUrls: newUrls.length > 0 ? newUrls : [''] });
+  };
+
+  const updateSwaggerUrl = (index: number, value: string) => {
+    const newUrls = [...formData.swaggerUrls];
+    newUrls[index] = value;
+    setFormData({ ...formData, swaggerUrls: newUrls });
   };
 
   const authTypeOptions = [
@@ -114,17 +142,49 @@ export default function NewProjectPage() {
 
             {/* Swagger/OpenAPI */}
             <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center gap-2 mb-3">
-                <LinkIcon className="w-4 h-4 text-blue-500" />
-                <span className="font-medium text-gray-900 dark:text-white">OpenAPI</span>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <LinkIcon className="w-4 h-4 text-blue-500" />
+                  <span className="font-medium text-gray-900 dark:text-white">OpenAPI</span>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={addSwaggerUrl}
+                  className="text-blue-500 hover:text-blue-600"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  {t('project.addUrl')}
+                </Button>
               </div>
-              <Input
-                label={t('project.swaggerUrl')}
-                placeholder={t('project.swaggerUrlPlaceholder')}
-                value={formData.swaggerUrl}
-                onChange={(e) => setFormData({ ...formData, swaggerUrl: e.target.value })}
-              />
-              <p className="text-sm text-gray-500 mt-2">{t('project.swaggerHint')}</p>
+
+              <div className="space-y-3">
+                {formData.swaggerUrls.map((url, index) => (
+                  <div key={index} className="flex gap-2">
+                    <div className="flex-1">
+                      <Input
+                        placeholder={t('project.swaggerUrlPlaceholder')}
+                        value={url}
+                        onChange={(e) => updateSwaggerUrl(index, e.target.value)}
+                      />
+                    </div>
+                    {formData.swaggerUrls.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeSwaggerUrl(index)}
+                        className="text-red-500 hover:text-red-600 shrink-0"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-sm text-gray-500 mt-3">{t('project.swaggerHint')}</p>
             </div>
 
             {/* Authentication */}

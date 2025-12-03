@@ -11,7 +11,7 @@ export interface Project {
   name: string;
   baseUrl: string;
   description?: string;
-  swaggerUrl?: string;
+  swaggerUrls: string[];
   authType: AuthType;
   enabled: boolean;
   endpointCount: number;
@@ -116,7 +116,7 @@ export interface CreateProjectRequest {
   name: string;
   baseUrl: string;
   description?: string;
-  swaggerUrl?: string;
+  swaggerUrls?: string[];
   authType?: AuthType;
   authValue?: string;
   headerName?: string;

@@ -19,8 +19,10 @@ data class Project(
     @Column(length = 1000)
     var description: String? = null,
 
-    @Column
-    var swaggerUrl: String? = null,
+    @ElementCollection
+    @CollectionTable(name = "project_swagger_urls", joinColumns = [JoinColumn(name = "project_id")])
+    @Column(name = "swagger_url")
+    var swaggerUrls: MutableList<String> = mutableListOf(),
 
     @Enumerated(EnumType.STRING)
     var authType: AuthType = AuthType.NONE,
