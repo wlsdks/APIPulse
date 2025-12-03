@@ -15,12 +15,13 @@ import {
   runProjectTests,
   syncProjectApis,
   testEndpoint,
+  updateProject,
 } from '@/lib/api';
 import { cn, formatRelativeTime } from '@/lib/utils';
 import type { CreateEndpointRequest, HttpMethod } from '@/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, Link as LinkIcon, Play, Plus, RefreshCw, X, Zap } from 'lucide-react';
+import { ArrowLeft, Link as LinkIcon, Play, Plus, RefreshCw, Trash2, X, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { use, useState } from 'react';
 
@@ -36,6 +37,8 @@ export default function ProjectDetailPage({ params }: PageProps) {
   const { showError, showSuccess } = useToast();
   const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showSwaggerModal, setShowSwaggerModal] = useState(false);
+  const [swaggerUrls, setSwaggerUrls] = useState<string[]>(['']);
   const [endpointForm, setEndpointForm] = useState<CreateEndpointRequest>({
     path: '',
     method: 'GET',
@@ -64,12 +67,23 @@ export default function ProjectDetailPage({ params }: PageProps) {
     queryFn: () => getTestStats(id),
   });
 
+  const updateProjectMutation = useMutation({
+    mutationFn: (data: { swaggerUrls: string[] }) => updateProject(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['project', id] });
+    },
+    onError: (error) => {
+      showError(error);
+    },
+  });
+
   const syncMutation = useMutation({
     mutationFn: () => syncProjectApis(id),
-    onSuccess: (result) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['endpoints', id] });
       queryClient.invalidateQueries({ queryKey: ['project', id] });
       showSuccess(t('success.syncCompleted'));
+      setShowSwaggerModal(false);
     },
     onError: (error) => {
       showError(error);
@@ -128,6 +142,46 @@ export default function ProjectDetailPage({ params }: PageProps) {
     createEndpointMutation.mutate(endpointForm);
   };
 
+  const handleSyncClick = () => {
+    if (hasSwaggerUrls) {
+      syncMutation.mutate();
+    } else {
+      setSwaggerUrls(project?.swaggerUrls?.length ? [...project.swaggerUrls] : ['']);
+      setShowSwaggerModal(true);
+    }
+  };
+
+  const handleSwaggerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const filteredUrls = swaggerUrls.filter((url) => url.trim() !== '');
+    if (filteredUrls.length === 0) {
+      showError({ message: t('project.swaggerUrlRequired') } as Error);
+      return;
+    }
+
+    try {
+      await updateProjectMutation.mutateAsync({ swaggerUrls: filteredUrls });
+      syncMutation.mutate();
+    } catch {
+      // Error already handled by mutation
+    }
+  };
+
+  const addSwaggerUrl = () => {
+    setSwaggerUrls([...swaggerUrls, '']);
+  };
+
+  const removeSwaggerUrl = (index: number) => {
+    const newUrls = swaggerUrls.filter((_, i) => i !== index);
+    setSwaggerUrls(newUrls.length > 0 ? newUrls : ['']);
+  };
+
+  const updateSwaggerUrl = (index: number, value: string) => {
+    const newUrls = [...swaggerUrls];
+    newUrls[index] = value;
+    setSwaggerUrls(newUrls);
+  };
+
   const hasSwaggerUrls = project?.swaggerUrls && project.swaggerUrls.length > 0 && project.swaggerUrls.some(url => url.trim() !== '');
 
   if (projectLoading) {
@@ -160,7 +214,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
           <p className="text-gray-500 dark:text-gray-400">{project.baseUrl}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending}>
+          <Button variant="outline" onClick={handleSyncClick} disabled={syncMutation.isPending}>
             <RefreshCw className={cn('w-4 h-4 mr-2', syncMutation.isPending && 'animate-spin')} />
             {t('project.syncApis')}
           </Button>
@@ -225,12 +279,10 @@ export default function ProjectDetailPage({ params }: PageProps) {
                 {hasSwaggerUrls ? t('project.noEndpointsWithSwagger') : t('project.noEndpointsWithoutSwagger')}
               </p>
               <div className="flex justify-center gap-3">
-                {hasSwaggerUrls && (
-                  <Button variant="outline" onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending}>
-                    <RefreshCw className={cn('w-4 h-4 mr-2', syncMutation.isPending && 'animate-spin')} />
-                    {t('project.syncApis')}
-                  </Button>
-                )}
+                <Button variant="outline" onClick={handleSyncClick} disabled={syncMutation.isPending}>
+                  <RefreshCw className={cn('w-4 h-4 mr-2', syncMutation.isPending && 'animate-spin')} />
+                  {t('project.syncApis')}
+                </Button>
                 <Button variant="gradient" onClick={() => setShowAddModal(true)}>
                   <Plus className="w-4 h-4 mr-2" />
                   {t('project.addEndpoint')}
@@ -280,6 +332,99 @@ export default function ProjectDetailPage({ params }: PageProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Swagger URL Modal */}
+      <AnimatePresence>
+        {showSwaggerModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+            onClick={() => setShowSwaggerModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.2 }}
+              className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    {t('project.configureSwagger')}
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {t('project.configureSwaggerDesc')}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowSwaggerModal(false)}
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSwaggerSubmit} className="p-6 space-y-4">
+                <div className="space-y-3">
+                  {swaggerUrls.map((url, index) => (
+                    <div key={index} className="flex gap-2">
+                      <div className="flex-1">
+                        <Input
+                          placeholder={t('project.swaggerUrlPlaceholder')}
+                          value={url}
+                          onChange={(e) => updateSwaggerUrl(index, e.target.value)}
+                        />
+                      </div>
+                      {swaggerUrls.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeSwaggerUrl(index)}
+                          className="text-red-500 hover:text-red-600 shrink-0"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={addSwaggerUrl}
+                  className="text-blue-500 hover:text-blue-600"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  {t('project.addUrl')}
+                </Button>
+
+                <p className="text-sm text-gray-500">{t('project.swaggerHint')}</p>
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <Button type="button" variant="outline" onClick={() => setShowSwaggerModal(false)}>
+                    {t('common.cancel')}
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="gradient"
+                    loading={updateProjectMutation.isPending || syncMutation.isPending}
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    {t('project.saveAndSync')}
+                  </Button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Add Endpoint Modal */}
       <AnimatePresence>
