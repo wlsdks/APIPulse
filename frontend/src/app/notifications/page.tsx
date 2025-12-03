@@ -41,7 +41,7 @@ export default function NotificationsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       setIsModalOpen(false);
-      setFormData({ name: '', type: 'SLACK', webhookUrl: '', emailRecipients: '' });
+      setFormData({ name: '', type: 'SLACK', webhookUrl: '', emailRecipients: '', notifyOnFailure: true, notifyOnRecovery: true });
       showSuccess(t('success.notificationSent'));
     },
     onError: (error) => {
