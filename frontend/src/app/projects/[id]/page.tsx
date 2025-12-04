@@ -279,9 +279,9 @@ export default function ProjectDetailPage({ params }: PageProps) {
     const properties = schema.properties as Record<string, Record<string, unknown>>;
     const items = schema.items as Record<string, unknown>;
 
-    // Use example or default if available
-    if (example !== undefined) return example;
-    if (defaultVal !== undefined) return defaultVal;
+    // Use example or default if available (check for both null and undefined)
+    if (example != null) return example;
+    if (defaultVal != null) return defaultVal;
     if (enumVals && enumVals.length > 0) return enumVals[0];
 
     switch (type) {
