@@ -21,7 +21,7 @@ import { cn, formatRelativeTime } from '@/lib/utils';
 import type { ApiEndpoint, AuthType, CreateEndpointRequest, CreateProjectRequest, HttpMethod, ParamSchema, TestEndpointRequest } from '@/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, ChevronDown, Link as LinkIcon, Lock, LockOpen, Play, Plus, RefreshCw, Settings, Trash2, X, Zap } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, Folder, Link as LinkIcon, Lock, LockOpen, Play, Plus, RefreshCw, Settings, Trash2, X, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { use, useState } from 'react';
 
@@ -77,6 +77,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
     authValue: '',
     headerName: '',
   });
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
   const { data: project, isLoading: projectLoading } = useQuery({
     queryKey: ['project', id],
@@ -173,6 +174,35 @@ export default function ProjectDetailPage({ params }: PageProps) {
 
   const getResultForEndpoint = (endpointId: string) => {
     return latestResults?.find((r) => r.endpointId === endpointId);
+  };
+
+  // Group endpoints by first path segment (e.g., /pet, /store, /user)
+  const getPathGroup = (path: string): string => {
+    const segments = path.split('/').filter(Boolean);
+    return segments.length > 0 ? `/${segments[0]}` : '/';
+  };
+
+  const groupedEndpoints = endpoints?.reduce((acc, endpoint) => {
+    const group = getPathGroup(endpoint.path);
+    if (!acc[group]) {
+      acc[group] = [];
+    }
+    acc[group].push(endpoint);
+    return acc;
+  }, {} as Record<string, ApiEndpoint[]>) ?? {};
+
+  const sortedGroups = Object.keys(groupedEndpoints).sort();
+
+  const toggleGroup = (group: string) => {
+    setCollapsedGroups(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(group)) {
+        newSet.delete(group);
+      } else {
+        newSet.add(group);
+      }
+      return newSet;
+    });
   };
 
   const handleAddEndpoint = (e: React.FormEvent) => {
@@ -577,40 +607,81 @@ export default function ProjectDetailPage({ params }: PageProps) {
             </div>
           ) : (
             <div className="divide-y divide-gray-200 dark:divide-gray-800">
-              {endpoints.map((endpoint) => {
-                const result = getResultForEndpoint(endpoint.id);
-                return (
-                  <div
-                    key={endpoint.id}
-                    className="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                  >
-                    <div className="flex items-center gap-4 flex-1 min-w-0">
-                      <MethodBadge method={endpoint.method} />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-mono text-sm truncate">{endpoint.path}</p>
-                        {endpoint.summary && (
-                          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{endpoint.summary}</p>
-                        )}
-                      </div>
-                    </div>
+              {sortedGroups.map((group) => {
+                const groupEndpoints = groupedEndpoints[group];
+                const isCollapsed = collapsedGroups.has(group);
 
-                    <div className="flex items-center gap-4">
-                      {result && (
-                        <div className="flex items-center gap-3">
-                          <StatusBadge status={result.status} />
-                          <span className="text-sm text-gray-500">{result.responseTimeMs}ms</span>
-                          <span className="text-xs text-gray-400">{formatRelativeTime(result.executedAt, language)}</span>
-                        </div>
+                return (
+                  <div key={group}>
+                    {/* Group Header */}
+                    <button
+                      onClick={() => toggleGroup(group)}
+                      className="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Folder className="w-4 h-4 text-gray-500" />
+                        <span className="font-mono font-medium text-gray-900 dark:text-white">{group}</span>
+                        <span className="text-xs text-gray-500 bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded-full">
+                          {groupEndpoints.length}
+                        </span>
+                      </div>
+                      {isCollapsed ? (
+                        <ChevronDown className="w-4 h-4 text-gray-500" />
+                      ) : (
+                        <ChevronUp className="w-4 h-4 text-gray-500" />
                       )}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => openTestModal(endpoint)}
-                        disabled={testEndpointMutation.isPending}
-                      >
-                        <Play className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    </button>
+
+                    {/* Group Endpoints */}
+                    <AnimatePresence initial={false}>
+                      {!isCollapsed && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          {groupEndpoints.map((endpoint) => {
+                            const result = getResultForEndpoint(endpoint.id);
+                            return (
+                              <div
+                                key={endpoint.id}
+                                className="flex items-center justify-between p-4 pl-10 hover:bg-gray-50 dark:hover:bg-gray-800/50 border-t border-gray-100 dark:border-gray-800"
+                              >
+                                <div className="flex items-center gap-4 flex-1 min-w-0">
+                                  <MethodBadge method={endpoint.method} />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-mono text-sm truncate">{endpoint.path}</p>
+                                    {endpoint.summary && (
+                                      <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{endpoint.summary}</p>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-4">
+                                  {result && (
+                                    <div className="flex items-center gap-3">
+                                      <StatusBadge status={result.status} />
+                                      <span className="text-sm text-gray-500">{result.responseTimeMs}ms</span>
+                                      <span className="text-xs text-gray-400">{formatRelativeTime(result.executedAt, language)}</span>
+                                    </div>
+                                  )}
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => openTestModal(endpoint)}
+                                    disabled={testEndpointMutation.isPending}
+                                  >
+                                    <Play className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 );
               })}
