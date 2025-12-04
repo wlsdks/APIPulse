@@ -26,6 +26,7 @@ export interface ApiEndpoint {
   summary?: string;
   description?: string;
   sampleRequestBody?: string;
+  requestBodySchema?: string;
   queryParams?: string;
   pathParams?: string;
   headers?: string;
@@ -33,6 +34,21 @@ export interface ApiEndpoint {
   enabled: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+// Schema types for parsed Swagger data
+export interface ParamSchema {
+  name: string;
+  required?: boolean;
+  schema?: {
+    type?: string;
+    format?: string;
+    default?: unknown;
+    enum?: string[];
+    example?: unknown;
+  };
+  in?: string;
+  description?: string;
 }
 
 export interface TestResult {
@@ -151,4 +167,11 @@ export interface CreateNotificationRequest {
   emailRecipients?: string;
   notifyOnFailure?: boolean;
   notifyOnRecovery?: boolean;
+}
+
+export interface TestEndpointRequest {
+  pathParams?: Record<string, string>;
+  queryParams?: Record<string, string>;
+  headers?: Record<string, string>;
+  requestBody?: string;
 }

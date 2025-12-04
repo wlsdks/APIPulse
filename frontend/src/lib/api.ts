@@ -12,6 +12,7 @@ import type {
   CreateEndpointRequest,
   CreateScheduleRequest,
   CreateNotificationRequest,
+  TestEndpointRequest,
 } from '@/types';
 import { ApiException, type ApiError } from '@/types/error';
 
@@ -114,8 +115,12 @@ export const deleteEndpoint = async (projectId: string, id: string): Promise<voi
   await api.delete(`/projects/${projectId}/endpoints/${id}`);
 };
 
-export const testEndpoint = async (projectId: string, id: string): Promise<TestResult> => {
-  const { data } = await api.post(`/projects/${projectId}/endpoints/${id}/test`);
+export const testEndpoint = async (
+  projectId: string,
+  id: string,
+  request?: TestEndpointRequest
+): Promise<TestResult> => {
+  const { data } = await api.post(`/projects/${projectId}/endpoints/${id}/test`, request || {});
   return data;
 };
 

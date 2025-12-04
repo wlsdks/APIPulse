@@ -15,12 +15,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ExternalLink, FolderKanban, MoreVertical, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 export default function ProjectsPage() {
   const { t, language } = useLanguage();
   const { showError, showSuccess } = useToast();
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [openMenu, setOpenMenu] = useState<string | null>(null);
 
   const { data: projects, isLoading } = useQuery({
@@ -99,7 +101,11 @@ export default function ProjectsPage() {
           {projects.map((project: Project) => (
             <StaggerItem key={project.id}>
               <InteractiveCard hoverScale={1.005}>
-                <Card variant="elevated">
+                <Card
+                  variant="elevated"
+                  className="cursor-pointer"
+                  onClick={() => router.push(`/projects/${project.id}`)}
+                >
                   <CardContent className="flex items-center justify-between py-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-2">

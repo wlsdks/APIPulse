@@ -2,6 +2,7 @@ package com.apipulse.service.endpoint
 
 import com.apipulse.dto.mapper.toResponse
 import com.apipulse.dto.request.CreateEndpointRequest
+import com.apipulse.dto.request.TestEndpointRequest
 import com.apipulse.dto.request.UpdateEndpointRequest
 import com.apipulse.dto.response.EndpointResponse
 import com.apipulse.dto.response.TestResultResponse
@@ -102,7 +103,7 @@ class EndpointServiceImpl(
         apiEndpointRepository.delete(endpoint)
     }
 
-    override fun testEndpoint(projectId: String, endpointId: String): TestResultResponse {
+    override fun testEndpoint(projectId: String, endpointId: String, request: TestEndpointRequest?): TestResultResponse {
         if (!projectRepository.existsById(projectId)) {
             throw ProjectNotFoundException(projectId)
         }
@@ -112,7 +113,7 @@ class EndpointServiceImpl(
             .orElseThrow { EndpointNotFoundException(endpointId) }
 
         val result = runBlocking(Dispatchers.IO) {
-            apiTesterService.testEndpoint(endpoint, TriggerType.MANUAL)
+            apiTesterService.testEndpoint(endpoint, TriggerType.MANUAL, null, request)
         }
 
         return result.toResponse()

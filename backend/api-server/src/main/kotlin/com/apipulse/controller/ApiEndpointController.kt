@@ -1,6 +1,7 @@
 package com.apipulse.controller
 
 import com.apipulse.dto.request.CreateEndpointRequest
+import com.apipulse.dto.request.TestEndpointRequest
 import com.apipulse.dto.request.UpdateEndpointRequest
 import com.apipulse.dto.response.EndpointResponse
 import com.apipulse.dto.response.TestResultResponse
@@ -58,8 +59,9 @@ class ApiEndpointController(
     @PostMapping("/{id}/test")
     fun testEndpoint(
         @PathVariable projectId: String,
-        @PathVariable id: String
+        @PathVariable id: String,
+        @RequestBody(required = false) request: TestEndpointRequest?
     ): ResponseEntity<TestResultResponse> {
-        return ResponseEntity.ok(endpointService.testEndpoint(projectId, id))
+        return ResponseEntity.ok(endpointService.testEndpoint(projectId, id, request))
     }
 }

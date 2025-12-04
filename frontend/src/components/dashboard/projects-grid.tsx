@@ -5,12 +5,10 @@ import { Badge, StatusBadge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/language-context';
-import { useToast } from '@/contexts/toast-context';
-import { runProjectTests } from '@/lib/api';
 import type { ProjectSummary } from '@/types';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ExternalLink, Play, RefreshCw } from 'lucide-react';
+import { ChevronRight, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface ProjectsGridProps {
   projects: ProjectSummary[];
@@ -18,19 +16,7 @@ interface ProjectsGridProps {
 
 export function ProjectsGrid({ projects }: ProjectsGridProps) {
   const { t } = useLanguage();
-  const { showError, showSuccess } = useToast();
-  const queryClient = useQueryClient();
-
-  const runTestsMutation = useMutation({
-    mutationFn: runProjectTests,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      showSuccess(t('success.testCompleted'));
-    },
-    onError: (error) => {
-      showError(error);
-    },
-  });
+  const router = useRouter();
 
   if (projects.length === 0) {
     return (
@@ -70,7 +56,8 @@ export function ProjectsGrid({ projects }: ProjectsGridProps) {
             <Card
               variant="status"
               status={getStatusForHealth(project.healthStatus)}
-              className="h-full"
+              className="h-full cursor-pointer"
+              onClick={() => router.push(`/projects/${project.id}`)}
             >
               <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
                 <div className="flex-1 min-w-0 pr-3">
@@ -107,26 +94,7 @@ export function ProjectsGrid({ projects }: ProjectsGridProps) {
                   <Badge variant="default" className="font-mono">
                     {project.avgResponseTimeMs}ms
                   </Badge>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => runTestsMutation.mutate(project.id)}
-                      disabled={runTestsMutation.isPending}
-                      title={t('project.runTests')}
-                    >
-                      {runTestsMutation.isPending ? (
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Play className="w-4 h-4" />
-                      )}
-                    </Button>
-                    <Link href={`/projects/${project.id}`}>
-                      <Button size="sm" variant="outline">
-                        {t('common.edit')}
-                      </Button>
-                    </Link>
-                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-400" />
                 </div>
               </CardContent>
             </Card>

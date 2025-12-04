@@ -18,10 +18,10 @@ import {
   updateProject,
 } from '@/lib/api';
 import { cn, formatRelativeTime } from '@/lib/utils';
-import type { CreateEndpointRequest, HttpMethod } from '@/types';
+import type { ApiEndpoint, AuthType, CreateEndpointRequest, CreateProjectRequest, HttpMethod, ParamSchema, TestEndpointRequest } from '@/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, ChevronDown, Link as LinkIcon, Play, Plus, RefreshCw, Settings, Trash2, X, Zap } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Link as LinkIcon, Lock, LockOpen, Play, Plus, RefreshCw, Settings, Trash2, X, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { use, useState } from 'react';
 
@@ -50,6 +50,33 @@ export default function ProjectDetailPage({ params }: PageProps) {
     expectedStatusCode: 200,
   });
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showTestModal, setShowTestModal] = useState(false);
+  const [selectedEndpoint, setSelectedEndpoint] = useState<ApiEndpoint | null>(null);
+  const [testForm, setTestForm] = useState<{
+    pathParams: Record<string, string>;
+    pathParamsSchema: ParamSchema[];
+    queryParams: Record<string, string>;
+    queryParamsSchema: ParamSchema[];
+    headersText: string;
+    requestBody: string;
+  }>({
+    pathParams: {},
+    pathParamsSchema: [],
+    queryParams: {},
+    queryParamsSchema: [],
+    headersText: '',
+    requestBody: '',
+  });
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authForm, setAuthForm] = useState<{
+    authType: AuthType;
+    authValue: string;
+    headerName: string;
+  }>({
+    authType: 'NONE',
+    authValue: '',
+    headerName: '',
+  });
 
   const { data: project, isLoading: projectLoading } = useQuery({
     queryKey: ['project', id],
@@ -72,7 +99,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
   });
 
   const updateProjectMutation = useMutation({
-    mutationFn: (data: { swaggerUrls: string[] }) => updateProject(id, data),
+    mutationFn: (data: Partial<CreateProjectRequest>) => updateProject(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['project', id] });
     },
@@ -107,10 +134,13 @@ export default function ProjectDetailPage({ params }: PageProps) {
   });
 
   const testEndpointMutation = useMutation({
-    mutationFn: (endpointId: string) => testEndpoint(id, endpointId),
+    mutationFn: ({ endpointId, request }: { endpointId: string; request?: TestEndpointRequest }) =>
+      testEndpoint(id, endpointId, request),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['latestResults', id] });
       queryClient.invalidateQueries({ queryKey: ['stats', id] });
+      setShowTestModal(false);
+      showSuccess(t('success.testCompleted'));
     },
     onError: (error) => {
       showError(error);
@@ -148,6 +178,228 @@ export default function ProjectDetailPage({ params }: PageProps) {
   const handleAddEndpoint = (e: React.FormEvent) => {
     e.preventDefault();
     createEndpointMutation.mutate(endpointForm);
+  };
+
+  // Extract path parameters from endpoint path (e.g., /users/{userId}/posts/{postId})
+  const extractPathParams = (path: string): string[] => {
+    const regex = /\{([^}]+)\}/g;
+    const params: string[] = [];
+    let match;
+    while ((match = regex.exec(path)) !== null) {
+      params.push(match[1]);
+    }
+    return params;
+  };
+
+  // Parse schema JSON safely
+  const parseSchemaJson = (json: string | undefined): ParamSchema[] => {
+    if (!json) return [];
+    try {
+      return JSON.parse(json) as ParamSchema[];
+    } catch {
+      return [];
+    }
+  };
+
+  // Generate default value based on schema type
+  const getDefaultValue = (schema: ParamSchema): string => {
+    const type = schema.schema?.type;
+    const example = schema.schema?.example;
+    const defaultVal = schema.schema?.default;
+    const enumVals = schema.schema?.enum;
+
+    if (example !== undefined) return String(example);
+    if (defaultVal !== undefined) return String(defaultVal);
+    if (enumVals && enumVals.length > 0) return enumVals[0];
+
+    switch (type) {
+      case 'integer':
+      case 'number':
+        return '1';
+      case 'boolean':
+        return 'true';
+      case 'array':
+        return '[]';
+      case 'object':
+        return '{}';
+      default:
+        return '';
+    }
+  };
+
+  // Generate sample JSON from requestBodySchema
+  const generateSampleFromSchema = (schemaJson: string | undefined): string => {
+    if (!schemaJson) return '';
+    try {
+      const schema = JSON.parse(schemaJson);
+      return JSON.stringify(generateObjectFromSchema(schema), null, 2);
+    } catch {
+      return '';
+    }
+  };
+
+  // Recursively generate object from OpenAPI schema
+  const generateObjectFromSchema = (schema: Record<string, unknown>): unknown => {
+    if (!schema) return null;
+
+    const type = schema.type as string;
+    const example = schema.example;
+    const defaultVal = schema.default;
+    const enumVals = schema.enum as string[];
+    const properties = schema.properties as Record<string, Record<string, unknown>>;
+    const items = schema.items as Record<string, unknown>;
+
+    // Use example or default if available
+    if (example !== undefined) return example;
+    if (defaultVal !== undefined) return defaultVal;
+    if (enumVals && enumVals.length > 0) return enumVals[0];
+
+    switch (type) {
+      case 'object':
+        if (properties) {
+          const obj: Record<string, unknown> = {};
+          for (const [key, propSchema] of Object.entries(properties)) {
+            obj[key] = generateObjectFromSchema(propSchema);
+          }
+          return obj;
+        }
+        return {};
+      case 'array':
+        if (items) {
+          return [generateObjectFromSchema(items)];
+        }
+        return [];
+      case 'integer':
+        return 1;
+      case 'number':
+        return 1.0;
+      case 'boolean':
+        return true;
+      case 'string':
+        return 'string';
+      default:
+        return null;
+    }
+  };
+
+  const openTestModal = (endpoint: ApiEndpoint) => {
+    setSelectedEndpoint(endpoint);
+
+    // Parse path params schema from endpoint
+    const pathParamsSchema = parseSchemaJson(endpoint.pathParams);
+    const initialPathParams: Record<string, string> = {};
+    pathParamsSchema.forEach((param) => {
+      initialPathParams[param.name] = getDefaultValue(param);
+    });
+
+    // Fallback to extracting from path if no schema
+    if (pathParamsSchema.length === 0) {
+      const extractedParams = extractPathParams(endpoint.path);
+      extractedParams.forEach((param) => {
+        initialPathParams[param] = '';
+      });
+    }
+
+    // Parse query params schema from endpoint
+    const queryParamsSchema = parseSchemaJson(endpoint.queryParams);
+    const initialQueryParams: Record<string, string> = {};
+    queryParamsSchema.forEach((param) => {
+      initialQueryParams[param.name] = getDefaultValue(param);
+    });
+
+    // Generate request body from schema if sampleRequestBody is not available
+    const requestBody = endpoint.sampleRequestBody || generateSampleFromSchema(endpoint.requestBodySchema);
+
+    setTestForm({
+      pathParams: initialPathParams,
+      pathParamsSchema,
+      queryParams: initialQueryParams,
+      queryParamsSchema,
+      headersText: '',
+      requestBody,
+    });
+    setShowTestModal(true);
+  };
+
+  const handleTestSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedEndpoint) return;
+
+    // Build request with parsed values
+    const cleanedRequest: TestEndpointRequest = {};
+
+    // Add path params if any have values
+    const filledPathParams = Object.fromEntries(
+      Object.entries(testForm.pathParams).filter(([, v]) => v.trim() !== '')
+    );
+    if (Object.keys(filledPathParams).length > 0) {
+      cleanedRequest.pathParams = filledPathParams;
+    }
+
+    // Add query params if any have values
+    const filledQueryParams = Object.fromEntries(
+      Object.entries(testForm.queryParams).filter(([, v]) => v.trim() !== '')
+    );
+    if (Object.keys(filledQueryParams).length > 0) {
+      cleanedRequest.queryParams = filledQueryParams;
+    }
+
+    // Parse headers from text
+    if (testForm.headersText.trim()) {
+      try {
+        cleanedRequest.headers = JSON.parse(testForm.headersText);
+      } catch {
+        showError(new Error('Invalid JSON in headers'));
+        return;
+      }
+    }
+
+    if (testForm.requestBody) {
+      cleanedRequest.requestBody = testForm.requestBody;
+    }
+
+    testEndpointMutation.mutate({
+      endpointId: selectedEndpoint.id,
+      request: Object.keys(cleanedRequest).length > 0 ? cleanedRequest : undefined,
+    });
+  };
+
+  const openAuthModal = () => {
+    setAuthForm({
+      authType: project?.authType || 'NONE',
+      authValue: '',
+      headerName: '',
+    });
+    setShowAuthModal(true);
+  };
+
+  const handleAuthSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await updateProjectMutation.mutateAsync({
+        authType: authForm.authType,
+        authValue: authForm.authValue || undefined,
+        headerName: authForm.headerName || undefined,
+      });
+      showSuccess(t('success.saved'));
+      setShowAuthModal(false);
+    } catch {
+      // Error handled by mutation
+    }
+  };
+
+  const handleClearAuth = async () => {
+    try {
+      await updateProjectMutation.mutateAsync({
+        authType: 'NONE',
+        authValue: undefined,
+        headerName: undefined,
+      });
+      showSuccess(t('success.saved'));
+      setShowAuthModal(false);
+    } catch {
+      // Error handled by mutation
+    }
   };
 
   const handleSyncClick = () => {
@@ -231,6 +483,20 @@ export default function ProjectDetailPage({ params }: PageProps) {
           <p className="text-gray-500 dark:text-gray-400">{project.baseUrl}</p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant={project.authType !== 'NONE' ? 'default' : 'outline'}
+            onClick={openAuthModal}
+            className={cn(
+              project.authType !== 'NONE' && 'bg-green-600 hover:bg-green-700'
+            )}
+          >
+            {project.authType !== 'NONE' ? (
+              <Lock className="w-4 h-4 mr-2" />
+            ) : (
+              <LockOpen className="w-4 h-4 mr-2" />
+            )}
+            {t('project.authorize')}
+          </Button>
           <Button variant="ghost" size="icon" onClick={openSwaggerModal} title={t('project.configureSwagger')}>
             <Settings className="w-4 h-4" />
           </Button>
@@ -339,7 +605,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => testEndpointMutation.mutate(endpoint.id)}
+                        onClick={() => openTestModal(endpoint)}
                         disabled={testEndpointMutation.isPending}
                       >
                         <Play className="w-4 h-4" />
@@ -352,6 +618,135 @@ export default function ProjectDetailPage({ params }: PageProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Auth Modal */}
+      <AnimatePresence>
+        {showAuthModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+            onClick={() => setShowAuthModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.2 }}
+              className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    {t('project.authorize')}
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {t('project.authorizeDesc')}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowAuthModal(false)}
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              <form onSubmit={handleAuthSubmit} className="p-6 space-y-4">
+                {project?.authType !== 'NONE' && (
+                  <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                    <Lock className="w-4 h-4 text-green-600" />
+                    <span className="text-sm text-green-700 dark:text-green-400">
+                      {t('project.authConfigured')}: {project?.authType}
+                    </span>
+                  </div>
+                )}
+
+                <Select
+                  label={t('project.authType')}
+                  options={[
+                    { value: 'NONE', label: t('project.authNone') },
+                    { value: 'BEARER_TOKEN', label: t('project.authBearer') },
+                    { value: 'API_KEY', label: t('project.authApiKey') },
+                    { value: 'BASIC_AUTH', label: t('project.authBasic') },
+                  ]}
+                  value={authForm.authType}
+                  onChange={(e) => setAuthForm({ ...authForm, authType: e.target.value as AuthType })}
+                />
+
+                {authForm.authType === 'BEARER_TOKEN' && (
+                  <Input
+                    label={t('project.token')}
+                    type="password"
+                    placeholder="eyJhbGciOiJIUzI1NiIs..."
+                    value={authForm.authValue}
+                    onChange={(e) => setAuthForm({ ...authForm, authValue: e.target.value })}
+                  />
+                )}
+
+                {authForm.authType === 'API_KEY' && (
+                  <>
+                    <Input
+                      label={t('project.headerName')}
+                      placeholder="X-API-Key"
+                      value={authForm.headerName}
+                      onChange={(e) => setAuthForm({ ...authForm, headerName: e.target.value })}
+                    />
+                    <Input
+                      label={t('project.token')}
+                      type="password"
+                      placeholder="your-api-key"
+                      value={authForm.authValue}
+                      onChange={(e) => setAuthForm({ ...authForm, authValue: e.target.value })}
+                    />
+                  </>
+                )}
+
+                {authForm.authType === 'BASIC_AUTH' && (
+                  <>
+                    <Input
+                      label={t('project.credentials')}
+                      type="password"
+                      placeholder="base64(username:password)"
+                      value={authForm.authValue}
+                      onChange={(e) => setAuthForm({ ...authForm, authValue: e.target.value })}
+                    />
+                    <p className="text-xs text-gray-500">{t('project.basicAuthHint')}</p>
+                  </>
+                )}
+
+                <div className="flex justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+                  {project?.authType !== 'NONE' && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={handleClearAuth}
+                      className="text-red-500 hover:text-red-600"
+                    >
+                      {t('project.clearAuth')}
+                    </Button>
+                  )}
+                  <div className="flex gap-3 ml-auto">
+                    <Button type="button" variant="outline" onClick={() => setShowAuthModal(false)}>
+                      {t('common.cancel')}
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="gradient"
+                      loading={updateProjectMutation.isPending}
+                      disabled={authForm.authType !== 'NONE' && !authForm.authValue}
+                    >
+                      {t('common.save')}
+                    </Button>
+                  </div>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Swagger URL Modal */}
       <AnimatePresence>
@@ -579,6 +974,182 @@ export default function ProjectDetailPage({ params }: PageProps) {
                   </Button>
                   <Button type="submit" variant="gradient" loading={createEndpointMutation.isPending}>
                     {t('project.addEndpoint')}
+                  </Button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Test Endpoint Modal */}
+      <AnimatePresence>
+        {showTestModal && selectedEndpoint && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+            onClick={() => setShowTestModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.2 }}
+              className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    {t('project.testEndpoint')}
+                  </h2>
+                  <div className="flex items-center gap-2 mt-1">
+                    <MethodBadge method={selectedEndpoint.method} />
+                    <span className="font-mono text-sm text-gray-500">{selectedEndpoint.path}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowTestModal(false)}
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              <form onSubmit={handleTestSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                {/* Path Parameters */}
+                {Object.keys(testForm.pathParams || {}).length > 0 ? (
+                  <div className="space-y-3">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {t('project.pathParams')}
+                    </label>
+                    {Object.keys(testForm.pathParams || {}).map((param) => {
+                      const schema = testForm.pathParamsSchema.find((s) => s.name === param);
+                      const typeInfo = schema?.schema?.type || 'string';
+                      const isRequired = schema?.required !== false;
+                      return (
+                        <div key={param} className="flex items-center gap-2">
+                          <div className="w-32 shrink-0">
+                            <span className="font-mono text-sm text-gray-700 dark:text-gray-300">{`{${param}}`}</span>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <span className="text-xs px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+                                {typeInfo}
+                              </span>
+                              {isRequired && (
+                                <span className="text-xs text-red-500">*</span>
+                              )}
+                            </div>
+                          </div>
+                          <Input
+                            placeholder={schema?.description || param}
+                            value={testForm.pathParams?.[param] || ''}
+                            onChange={(e) =>
+                              setTestForm({
+                                ...testForm,
+                                pathParams: { ...testForm.pathParams, [param]: e.target.value },
+                              })
+                            }
+                            required={isRequired}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 italic">{t('project.noPathParams')}</p>
+                )}
+
+                {/* Query Parameters */}
+                {testForm.queryParamsSchema.length > 0 ? (
+                  <div className="space-y-3">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {t('project.queryParams')}
+                    </label>
+                    {testForm.queryParamsSchema.map((schema) => {
+                      const typeInfo = schema.schema?.type || 'string';
+                      const isRequired = schema.required === true;
+                      const enumValues = schema.schema?.enum;
+                      const hasEnum = enumValues && enumValues.length > 0;
+                      return (
+                        <div key={schema.name} className="flex items-center gap-2">
+                          <div className="w-32 shrink-0">
+                            <span className="font-mono text-sm text-gray-700 dark:text-gray-300">{schema.name}</span>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <span className="text-xs px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                                {hasEnum ? 'enum' : typeInfo}
+                              </span>
+                              {isRequired && (
+                                <span className="text-xs text-red-500">*</span>
+                              )}
+                            </div>
+                          </div>
+                          {hasEnum ? (
+                            <Select
+                              options={enumValues.map((v) => ({ value: v, label: v }))}
+                              value={testForm.queryParams[schema.name] || ''}
+                              onChange={(e) =>
+                                setTestForm({
+                                  ...testForm,
+                                  queryParams: { ...testForm.queryParams, [schema.name]: e.target.value },
+                                })
+                              }
+                            />
+                          ) : (
+                            <Input
+                              placeholder={schema.description || schema.name}
+                              value={testForm.queryParams[schema.name] || ''}
+                              onChange={(e) =>
+                                setTestForm({
+                                  ...testForm,
+                                  queryParams: { ...testForm.queryParams, [schema.name]: e.target.value },
+                                })
+                              }
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 italic">{t('project.noQueryParams')}</p>
+                )}
+
+                {/* Headers */}
+                <Textarea
+                  label={t('project.headers')}
+                  placeholder={t('project.headersPlaceholder')}
+                  value={testForm.headersText}
+                  onChange={(e) => setTestForm({ ...testForm, headersText: e.target.value })}
+                  rows={3}
+                />
+
+                {/* Request Body (for POST, PUT, PATCH) */}
+                {['POST', 'PUT', 'PATCH'].includes(selectedEndpoint.method) && (
+                  <div className="space-y-2">
+                    <Textarea
+                      label={t('project.requestBody')}
+                      placeholder={t('project.requestBodyPlaceholder')}
+                      value={testForm.requestBody || ''}
+                      onChange={(e) => setTestForm({ ...testForm, requestBody: e.target.value })}
+                      rows={8}
+                    />
+                    {selectedEndpoint.requestBodySchema && (
+                      <p className="text-xs text-gray-500">
+                        {t('project.schemaAvailable')}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <Button type="button" variant="outline" onClick={() => setShowTestModal(false)}>
+                    {t('common.cancel')}
+                  </Button>
+                  <Button type="submit" variant="gradient" loading={testEndpointMutation.isPending}>
+                    <Play className="w-4 h-4 mr-2" />
+                    {t('project.runTest')}
                   </Button>
                 </div>
               </form>

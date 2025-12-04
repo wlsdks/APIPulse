@@ -1,5 +1,6 @@
 package com.apipulse.service.tester
 
+import com.apipulse.dto.request.TestEndpointRequest
 import com.apipulse.model.*
 import com.apipulse.repository.ApiEndpointRepository
 import com.apipulse.repository.ProjectRepository
@@ -34,10 +35,18 @@ class ApiTesterService(
     suspend fun testEndpoint(
         endpoint: ApiEndpoint,
         triggerType: TriggerType = TriggerType.MANUAL,
-        scheduleId: String? = null
+        scheduleId: String? = null,
+        runtimeRequest: TestEndpointRequest? = null
     ): TestResult {
         val project = endpoint.project
-        val fullUrl = buildUrl(project.baseUrl, endpoint.path, endpoint.pathParams, endpoint.queryParams)
+        val fullUrl = buildUrl(
+            project.baseUrl,
+            endpoint.path,
+            endpoint.pathParams,
+            endpoint.queryParams,
+            runtimeRequest?.pathParams,
+            runtimeRequest?.queryParams
+        )
 
         val startTime = System.currentTimeMillis()
 
@@ -49,14 +58,24 @@ class ApiTesterService(
 
             applyAuthentication(requestBuilder, project)
 
+            // Apply runtime headers first (if provided), then endpoint headers
+            runtimeRequest?.headers?.forEach { (key, value) ->
+                requestBuilder.header(key, value)
+            }
+
             endpoint.headers?.let { headersJson ->
                 val headers: Map<String, String> = objectMapper.readValue(headersJson)
                 headers.forEach { (key, value) ->
-                    requestBuilder.header(key, value)
+                    // Only apply if not already set by runtime
+                    if (runtimeRequest?.headers?.containsKey(key) != true) {
+                        requestBuilder.header(key, value)
+                    }
                 }
             }
 
-            endpoint.sampleRequestBody?.let { body ->
+            // Use runtime body if provided, otherwise use endpoint's sample body
+            val bodyToSend = runtimeRequest?.requestBody ?: endpoint.sampleRequestBody
+            bodyToSend?.let { body ->
                 requestBuilder.bodyValue(body)
             }
 
@@ -168,29 +187,51 @@ class ApiTesterService(
         baseUrl: String,
         path: String,
         pathParams: String?,
-        queryParams: String?
+        queryParams: String?,
+        runtimePathParams: Map<String, String>? = null,
+        runtimeQueryParams: Map<String, String>? = null
     ): String {
         var url = "${baseUrl.trimEnd('/')}/${path.trimStart('/')}"
 
+        // Apply path params - use runtime values if provided, otherwise use defaults
         pathParams?.let { paramsJson ->
             val params: List<Map<String, Any>> = objectMapper.readValue(paramsJson)
             params.forEach { param ->
                 val name = param["name"] as String
-                url = url.replace("{$name}", "1")
+                val value = runtimePathParams?.get(name) ?: "1"
+                url = url.replace("{$name}", value)
             }
         }
 
-        queryParams?.let { paramsJson ->
-            val params: List<Map<String, Any>> = objectMapper.readValue(paramsJson)
-            val queryString = params.mapNotNull { param ->
-                val name = param["name"] as String
-                val required = param["required"] as? Boolean ?: false
-                if (required) "$name=test" else null
-            }.joinToString("&")
+        // Also replace any path params that might be in runtime but not in schema
+        runtimePathParams?.forEach { (name, value) ->
+            url = url.replace("{$name}", value)
+        }
 
-            if (queryString.isNotEmpty()) {
-                url = "$url?$queryString"
+        // Build query string from runtime params or schema defaults
+        val queryParts = mutableListOf<String>()
+
+        // Add runtime query params first (they take priority)
+        runtimeQueryParams?.forEach { (name, value) ->
+            queryParts.add("$name=${java.net.URLEncoder.encode(value, "UTF-8")}")
+        }
+
+        // If no runtime query params, fall back to schema defaults
+        if (runtimeQueryParams.isNullOrEmpty()) {
+            queryParams?.let { paramsJson ->
+                val params: List<Map<String, Any>> = objectMapper.readValue(paramsJson)
+                params.forEach { param ->
+                    val name = param["name"] as String
+                    val required = param["required"] as? Boolean ?: false
+                    if (required) {
+                        queryParts.add("$name=test")
+                    }
+                }
             }
+        }
+
+        if (queryParts.isNotEmpty()) {
+            url = "$url?${queryParts.joinToString("&")}"
         }
 
         return url
