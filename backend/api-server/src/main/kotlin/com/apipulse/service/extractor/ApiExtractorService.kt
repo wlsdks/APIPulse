@@ -77,8 +77,15 @@ class ApiExtractorService(
                         description = operation.description
                         updatedAt = Instant.now()
 
-                        operation.requestBody?.content?.get("application/json")?.schema?.let { schema ->
-                            requestBodySchema = objectMapper.writeValueAsString(schema)
+                        // Extract request body content type
+                        operation.requestBody?.content?.let { content ->
+                            val contentType = content.keys.firstOrNull()
+                            requestContentType = contentType
+
+                            // Only extract schema for JSON content types
+                            content["application/json"]?.schema?.let { schema ->
+                                requestBodySchema = objectMapper.writeValueAsString(schema)
+                            }
                         }
 
                         operation.parameters?.filter { it.`in` == "query" }?.let { params ->
@@ -102,6 +109,7 @@ class ApiExtractorService(
                         method = httpMethod,
                         summary = operation.summary,
                         description = operation.description,
+                        requestContentType = operation.requestBody?.content?.keys?.firstOrNull(),
                         requestBodySchema = operation.requestBody?.content?.get("application/json")?.schema?.let {
                             objectMapper.writeValueAsString(it)
                         },

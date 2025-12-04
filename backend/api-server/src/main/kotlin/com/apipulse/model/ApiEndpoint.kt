@@ -30,6 +30,9 @@ data class ApiEndpoint(
     @Column(columnDefinition = "TEXT")
     var requestBodySchema: String? = null,
 
+    @Column(length = 100)
+    var requestContentType: String? = null,
+
     @Column(columnDefinition = "TEXT")
     var sampleRequestBody: String? = null,
 

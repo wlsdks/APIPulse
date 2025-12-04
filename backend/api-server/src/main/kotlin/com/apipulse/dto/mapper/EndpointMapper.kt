@@ -11,6 +11,7 @@ fun ApiEndpoint.toResponse() = EndpointResponse(
     description = description,
     sampleRequestBody = sampleRequestBody,
     requestBodySchema = requestBodySchema,
+    requestContentType = requestContentType,
     queryParams = queryParams,
     pathParams = pathParams,
     headers = headers,

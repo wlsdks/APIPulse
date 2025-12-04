@@ -11,6 +11,7 @@ data class EndpointResponse(
     val description: String?,
     val sampleRequestBody: String?,
     val requestBodySchema: String?,
+    val requestContentType: String?,
     val queryParams: String?,
     val pathParams: String?,
     val headers: String?,

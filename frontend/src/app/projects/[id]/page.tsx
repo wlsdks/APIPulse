@@ -231,17 +231,21 @@ export default function ProjectDetailPage({ params }: PageProps) {
     }
   };
 
-  // Generate default value based on schema type
+  // Generate smart default value based on schema type and parameter name
   const getDefaultValue = (schema: ParamSchema): string => {
     const type = schema.schema?.type;
+    const format = schema.schema?.format;
     const example = schema.schema?.example;
     const defaultVal = schema.schema?.default;
     const enumVals = schema.schema?.enum;
+    const paramName = schema.name.toLowerCase();
 
+    // Use explicit example or default first
     if (example !== undefined) return String(example);
     if (defaultVal !== undefined) return String(defaultVal);
     if (enumVals && enumVals.length > 0) return enumVals[0];
 
+    // Smart defaults based on type
     switch (type) {
       case 'integer':
       case 'number':
@@ -252,8 +256,36 @@ export default function ProjectDetailPage({ params }: PageProps) {
         return '[]';
       case 'object':
         return '{}';
+      case 'string':
       default:
-        return '';
+        // Smart defaults based on format
+        if (format === 'date') return new Date().toISOString().split('T')[0];
+        if (format === 'date-time') return new Date().toISOString();
+        if (format === 'email') return 'user@example.com';
+        if (format === 'uri' || format === 'url') return 'https://example.com';
+        if (format === 'uuid') return '550e8400-e29b-41d4-a716-446655440000';
+
+        // Smart defaults based on parameter name patterns
+        if (paramName.endsWith('id') || paramName.endsWith('_id')) return '1';
+        if (paramName === 'name' || paramName.endsWith('name')) return 'example';
+        if (paramName === 'status') return 'active';
+        if (paramName === 'type') return 'default';
+        if (paramName.includes('email')) return 'user@example.com';
+        if (paramName.includes('url') || paramName.includes('link')) return 'https://example.com';
+        if (paramName.includes('phone')) return '+1234567890';
+        if (paramName.includes('date')) return new Date().toISOString().split('T')[0];
+        if (paramName.includes('password')) return '********';
+        if (paramName.includes('description') || paramName.includes('comment')) return 'Sample text';
+        if (paramName.includes('tag')) return 'tag1';
+        if (paramName.includes('category')) return 'general';
+        if (paramName.includes('title')) return 'Sample Title';
+        if (paramName.includes('username') || paramName.includes('user')) return 'john_doe';
+        if (paramName.includes('code')) return 'ABC123';
+        if (paramName.includes('count') || paramName.includes('quantity') || paramName.includes('amount')) return '10';
+        if (paramName.includes('price') || paramName.includes('cost')) return '99.99';
+
+        // Generic fallback for string type
+        return 'example';
     }
   };
 
@@ -326,7 +358,8 @@ export default function ProjectDetailPage({ params }: PageProps) {
     if (pathParamsSchema.length === 0) {
       const extractedParams = extractPathParams(endpoint.path);
       extractedParams.forEach((param) => {
-        initialPathParams[param] = '';
+        // Use getDefaultValue with a minimal schema object for smart defaults
+        initialPathParams[param] = getDefaultValue({ name: param });
       });
     }
 
@@ -1199,17 +1232,39 @@ export default function ProjectDetailPage({ params }: PageProps) {
                 {/* Request Body (for POST, PUT, PATCH) */}
                 {['POST', 'PUT', 'PATCH'].includes(selectedEndpoint.method) && (
                   <div className="space-y-2">
-                    <Textarea
-                      label={t('project.requestBody')}
-                      placeholder={t('project.requestBodyPlaceholder')}
-                      value={testForm.requestBody || ''}
-                      onChange={(e) => setTestForm({ ...testForm, requestBody: e.target.value })}
-                      rows={8}
-                    />
-                    {selectedEndpoint.requestBodySchema && (
-                      <p className="text-xs text-gray-500">
-                        {t('project.schemaAvailable')}
-                      </p>
+                    {selectedEndpoint.requestContentType &&
+                     !selectedEndpoint.requestContentType.includes('application/json') ? (
+                      // File upload or other non-JSON content type
+                      <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                        <p className="text-sm text-amber-700 dark:text-amber-400">
+                          {t('project.fileUploadEndpoint').replace('{contentType}', selectedEndpoint.requestContentType)}
+                        </p>
+                      </div>
+                    ) : !selectedEndpoint.requestContentType &&
+                        !selectedEndpoint.requestBodySchema &&
+                        !selectedEndpoint.sampleRequestBody ? (
+                      // No request body required
+                      <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {t('project.noRequestBody')}
+                        </p>
+                      </div>
+                    ) : (
+                      // JSON request body
+                      <>
+                        <Textarea
+                          label={t('project.requestBody')}
+                          placeholder={t('project.requestBodyPlaceholder')}
+                          value={testForm.requestBody || ''}
+                          onChange={(e) => setTestForm({ ...testForm, requestBody: e.target.value })}
+                          rows={8}
+                        />
+                        {selectedEndpoint.requestBodySchema && (
+                          <p className="text-xs text-gray-500">
+                            {t('project.schemaAvailable')}
+                          </p>
+                        )}
+                      </>
                     )}
                   </div>
                 )}

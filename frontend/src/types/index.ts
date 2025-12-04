@@ -27,6 +27,7 @@ export interface ApiEndpoint {
   description?: string;
   sampleRequestBody?: string;
   requestBodySchema?: string;
+  requestContentType?: string;
   queryParams?: string;
   pathParams?: string;
   headers?: string;
